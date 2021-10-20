@@ -1,0 +1,21 @@
+
+version: 2
+
+models:
+    - name: covid19_stats
+      description: "Covid-19 cases per day and country"
+      columns:
+          - name: day
+            description: "Day"
+            tests:
+                - not_null
+          - name: cases
+            description: "Number of covid-19 cases"
+            tests:
+                - not_null
+          - name: country_name
+            description: "Country"
+            tests:
+                - not_null
+ 
+        
