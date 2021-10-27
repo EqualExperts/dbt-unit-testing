@@ -6,12 +6,12 @@
 }}
 
 {% set inputs %}
-covid19_raw as (
-select CAST('2021-05-06' as date) as day, '[{"newCases": 20}]' as payload, null as country_id)
+covid19_stg as (
+select CAST('2021-05-05' as date) as day, '[{}]' as payload, null as country_id)
 {% endset %}
 
 {% set expectations %}
-select cast('2021-05-06' as Date) as day, 20 as cases
+select cast('2021-05-05' as Date) as day, 0 as cases
 {% endset %}
  
 {{ unit_test(inputs, expectations) }}

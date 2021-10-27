@@ -6,7 +6,7 @@
 }}
 
 {% set inputs %}
-covid19_raw as (
+covid19_stg as (
 select null as day, '' as payload, 'uk' as country_id)
 {% endset %}
 

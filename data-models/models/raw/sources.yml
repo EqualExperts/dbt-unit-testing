@@ -1,7 +1,0 @@
-version: 2
-
-sources:
-  - name: covid19_raw
-    tables:
-      - name: covid19_raw
-      - name: covid19_country_raw

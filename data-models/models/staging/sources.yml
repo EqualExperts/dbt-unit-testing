@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: covid19_stg
+    tables:
+      - name: covid19_stg
+      - name: covid19_country_stg

@@ -4,7 +4,7 @@ default:
       type: bigquery
       method: oauth
       project: [YOUR GCP PROJECT]
-      dataset: covid19 # You can also use "schema" here
+      dataset: covid19
       threads: 1
       timeout_seconds: 300
       location: US # Optional, one of US or EU
