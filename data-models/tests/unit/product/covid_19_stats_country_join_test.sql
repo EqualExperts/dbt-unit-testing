@@ -5,18 +5,18 @@
     )
 }}
 
-{% set inputs %}
-covid19_cases_per_day as (
-select cast('2021-05-05' as Date) as day, 10 as cases, 'uk' as country_id
-),
-covid19_country_stg as (
-select 'uk' as country_id, 'United Kingdom' as country_name
-)
-{% endset %}
-
-{% set expectations %}
-select  cast('2021-05-05' as Date) as day, 10 as cases,  'United Kingdom' as country_name    
-{% endset %}
+{% call test ('covid19_stats', 'descr') %}
+  {% call mock_ref ('covid19_cases_per_day') %}
+     select cast('2021-05-05' as Date) as day, 10 as cases, 'uk' as country_id
+  {% endcall %}
  
-{{ unit_test(inputs, expectations) }}
+  {% call mock_source('covid19_stg', 'covid19_country_stg') %}
+    select 'uk' as country_id, 'United Kingdom' as country_name
+  {% endcall %}
 
+  {% call expect() %}
+    select  cast('2021-05-05' as Date) as day, 10 as cases,  'United Kingdom' as country_name    
+  {% endcall %}
+
+{% endcall %}
+ 
