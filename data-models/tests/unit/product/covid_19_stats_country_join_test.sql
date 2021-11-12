@@ -1,11 +1,10 @@
 {{
     config(
-        tags=['unit-test'],
-        model_under_test='covid19_stats'
+        tags=['unit-test']
     )
 }}
 
-{% call test ('covid19_stats', 'descr') %}
+{% call test ('covid19_stats') %}
   {% call mock_ref ('covid19_cases_per_day') %}
      select cast('2021-05-05' as Date) as day, 10 as cases, 'uk' as country_id
   {% endcall %}
