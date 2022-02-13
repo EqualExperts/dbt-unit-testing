@@ -26,4 +26,4 @@ jobs:
       uses: 'google-github-actions/setup-gcloud@v0'
     
     - name: test
-      run: cd integration-tests && make test TARGET=bigquery
+      run: bq ls
