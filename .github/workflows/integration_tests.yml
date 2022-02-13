@@ -25,5 +25,5 @@ jobs:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v0'
     
-    - name: test
-      run: ./run_test.sh
+    - name: test bigquery
+      run: ./run_test.sh bigquery
