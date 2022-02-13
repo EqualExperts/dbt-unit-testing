@@ -4,7 +4,6 @@ integration_tests:
     bigquery:
       type: bigquery
       method: service-account
-      keyfile: "{{ env_var('BIGQUERY_SERVICE_KEY_PATH') }}"
       project: "{{ env_var('BIGQUERY_TEST_PROJECT') }}"
       dataset: "{{ env_var('BIGQUERY_TEST_DATASET') }}"
       threads: 1
