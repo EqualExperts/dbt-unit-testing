@@ -1,4 +1,4 @@
-name: 'dbt_unit_testing'
+name: 'dbt-unit-testing'
 version: '0.1.0'
 config-version: 2
 
