@@ -6,5 +6,4 @@ integration_tests:
       method: "{{ env_var('BIGQUERY_AUTH_METHOD') }}"
       project: "{{ env_var('BIGQUERY_TEST_PROJECT') }}"
       dataset: "{{ env_var('BIGQUERY_TEST_DATASET') }}"
-      keyfile: "{{ env_var('BIGQUERY_SERVICE_ACCOUNT_TOKEN') }}"
       threads: 1
