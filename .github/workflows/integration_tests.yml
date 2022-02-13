@@ -2,10 +2,9 @@ name: Dbt Unit Testing
 
 on:
   push:
-    branches: [ dbt-package-structure ]
+    branches: [ master ]
   pull_request:
-    branches: [ dbt-package-structure ]
-  # Allows you to run this workflow manually from the Actions tab
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
