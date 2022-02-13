@@ -14,10 +14,10 @@ cd integration-tests
 
 if [[ ! -e ~/.dbt/profiles.yml ]]; then
     mkdir -p ~/.dbt
-    cp ci/sample.profiles.yml ~/.dbt/profiles.yml
+    cp ci/profiles.yml ~/.dbt/profiles.yml
 fi
 
 dbt deps --target $1
 dbt run --target $1 --models mock-staging-tables
 dbt run --target $1 --models transform staging product
-dbt test --target $1 --data --models tag:unit-test
+dbt test --target $1 --models tag:unit-test

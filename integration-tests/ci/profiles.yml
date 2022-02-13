@@ -7,4 +7,3 @@ integration_tests:
       project: "{{ env_var('BIGQUERY_TEST_PROJECT') }}"
       dataset: "{{ env_var('BIGQUERY_TEST_DATASET') }}"
       threads: 1
-
