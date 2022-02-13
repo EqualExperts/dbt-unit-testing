@@ -3,7 +3,7 @@ integration_tests:
   outputs:
     bigquery:
       type: bigquery
-      method: service-account
+      method: oauth
       project: "{{ env_var('BIGQUERY_TEST_PROJECT') }}"
       dataset: "{{ env_var('BIGQUERY_TEST_DATASET') }}"
       threads: 1
