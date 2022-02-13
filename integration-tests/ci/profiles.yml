@@ -4,6 +4,6 @@ integration_tests:
     bigquery:
       type: bigquery
       method: oauth
-      project: "{{ env_var('BIGQUERY_TEST_PROJECT') }}"
-      dataset: "{{ env_var('BIGQUERY_TEST_DATASET') }}"
+      project: "{{ env_var('GOOGLE_CLOUD_PROJECT') }}"
+      dataset: dbt_unit_testing
       threads: 1
