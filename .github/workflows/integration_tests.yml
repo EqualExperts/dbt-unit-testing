@@ -1,0 +1,21 @@
+name: Dbt Unit Testing
+
+on:
+  push:
+    branches: [ dbt-package-structure ]
+  pull_request:
+    branches: [ dbt-package-structure ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: 'actions/checkout@v2'
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
