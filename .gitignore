@@ -1,3 +1,9 @@
 target
 .DS_Store
 logs
+target/
+dbt_modules/
+dbt_packages/
+logs/
+venv/
+integration-tests/ci/.user.yml

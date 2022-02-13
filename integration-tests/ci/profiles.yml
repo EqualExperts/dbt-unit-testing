@@ -1,0 +1,9 @@
+integration_tests:
+  target: bigquery
+  outputs:
+    bigquery:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GOOGLE_CLOUD_PROJECT') }}"
+      dataset: dbt_unit_testing
+      threads: 1

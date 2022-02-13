@@ -1,0 +1,25 @@
+# Name your project! Project names should contain only lowercase characters
+# and underscores. A good package name should reflect your organization's
+# name or the intended use of these models
+name: 'dbt_unit_testing_integration_tests'
+version: '0.1.0'
+config-version: 2
+
+profile: 'integration_tests'
+
+source-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+target-path: "target"  # directory which will store compiled SQL files
+clean-targets:         # directories to be removed by `dbt clean`
+    - "target"
+    - "dbt_modules"
+    - "dbt_packages"
+
+dispatch:
+  - macro_namespace: 'dbt_unit_testing'
+    search_order: ['dbt_unit_testing_integration_tests', 'dbt_uni_testing']
+vars:
+  unit-test: false
