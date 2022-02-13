@@ -1,0 +1,10 @@
+name: 'dbt_unit_testing'
+version: '0.1.0'
+config-version: 2
+
+require-dbt-version: [">=0.20.2"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_modules", "dbt_packages"]
+macro-paths: ["macros"]
+log-path: "logs"

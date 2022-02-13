@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: dbt_unit_testing_staging
+    tables:
+      - name: covid19_stg
+      - name: covid19_country_stg
