@@ -20,6 +20,6 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 dispatch:
   - macro_namespace: 'dbt_unit_testing'
-    search_order: ['dbt_unit_testing_integration_tests', 'dbt_uni_testing']
+    search_order: ['dbt_unit_testing_integration_tests', 'dbt_unit_testing']
 vars:
   unit-test: false
