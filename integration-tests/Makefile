@@ -1,5 +1,5 @@
 TARGETS = bigquery
-.PHONY : test install-deps create-mock-staging-tables dbt-run run-unit-tests
+.PHONY : test
 
 test: export TARGET = $(target)
 test:
