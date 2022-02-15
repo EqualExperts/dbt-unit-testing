@@ -9,7 +9,7 @@
      select cast('2021-05-05' as Date) as day, 10 as cases, 'uk' as country_id
   {% endcall %}
  
-  {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_country_stg') %}
+  {% call dbt_unit_testing.mock_source('dbt_unit_testing', 'covid19_country_stg') %}
     select 'uk' as country_id, 'United Kingdom' as country_name
   {% endcall %}
 

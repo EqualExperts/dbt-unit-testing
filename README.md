@@ -105,7 +105,7 @@ The first line was not on the model but the second line was.
 
 [ ] Snowflake
 
-[ ] Postgres
+[x] Postgres
 
 [ ] Redshift
 

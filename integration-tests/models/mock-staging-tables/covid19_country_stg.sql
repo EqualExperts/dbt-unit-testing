@@ -1,4 +1,4 @@
-{{ config(materialized='table',dataset='staging')}}
+{{ config(materialized='table')}}
 with values as (
 select 
 '' as country_id,

@@ -26,3 +26,6 @@ jobs:
     
     - name: test bigquery
       run: ./run_test.sh bigquery
+
+    - name: test postgres
+      run: cd integration-tests && make TARGET=postgres
