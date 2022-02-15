@@ -92,7 +92,7 @@ The goal is to write the test, write the model, and then run the test (with “d
 
 ### Convenience features
 
-- You can define multiple tests in the same file using UNION [here](https://github.com/EqualExperts/dbt-unit-testing/blob/master/integration-tests/tests/unit/transform/covid_19_cases_per_day.sql).
+- You can define multiple tests in the same file using `UNION ALL` [here](data-models/tests/unit/transform/covid_19_cases_per_day.sql).
 - When mocking a ref or a model you just need to define the columns that you will test.
 
 #### Test Feedback
