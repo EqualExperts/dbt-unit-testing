@@ -19,5 +19,5 @@ fi
 
 dbt deps --target $1
 dbt run --target $1 --models mock-staging-tables
-dbt run --target $1 --models transform staging product
+dbt run --target $1 --models transform product
 dbt test --target $1 --models tag:unit-test

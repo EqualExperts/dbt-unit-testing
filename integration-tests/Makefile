@@ -1,6 +1,9 @@
 TARGETS = bigquery
-.PHONY : test
+.PHONY : test $(TARGETS)
 
 test: export TARGET = $(target)
 test:
-	docker-compose -f ../docker-compose.yml up dbt
+	docker-compose -f ../docker-compose.yml up
+
+$(TARGETS):
+	$(MAKE) test target=$@

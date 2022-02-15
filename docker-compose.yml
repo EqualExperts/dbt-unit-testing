@@ -9,3 +9,9 @@ services:
     working_dir: /repo
     volumes:
         - ".:/repo"
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=mysecretpass

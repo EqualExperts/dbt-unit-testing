@@ -5,7 +5,7 @@
 }}
 
 {% call dbt_unit_testing.test('covid19_cases_per_day', 'empty payload') %}
-  {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_stg') %}
+  {% call dbt_unit_testing.mock_source('dbt_unit_testing', 'covid19_stg') %}
     select CAST('2021-05-05' as date) as day, '[{}]' as payload
   {% endcall %}
 
@@ -17,7 +17,7 @@
 UNION ALL
 
 {% call dbt_unit_testing.test('covid19_cases_per_day', 'extracting cases from payload') %}
-  {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_stg') %}
+  {% call dbt_unit_testing.mock_source('dbt_unit_testing', 'covid19_stg') %}
     select CAST('2021-05-06' as date) as day, '[{"newCases": 20}]' as payload
   {% endcall %}
 
@@ -29,7 +29,7 @@ UNION ALL
 UNION ALL
 
 {% call dbt_unit_testing.test('covid19_cases_per_day', 'extracting country id') %}
-  {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_stg') %}
+  {% call dbt_unit_testing.mock_source('dbt_unit_testing', 'covid19_stg') %}
     select null as day, '' as payload, 'uk' as country_id
   {% endcall %}
 

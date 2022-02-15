@@ -1,4 +1,4 @@
-{{ config(materialized='table',dataset='staging')}}
+{{ config(materialized='table')}}
 with values as (
 select cast('2020-01-01' as Date) as day,
 '' as country_id,

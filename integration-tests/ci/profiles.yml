@@ -7,3 +7,13 @@ integration_tests:
       project: "{{ env_var('GOOGLE_CLOUD_PROJECT') }}"
       dataset: dbt_unit_testing
       threads: 1
+    
+    postgres:
+      type: postgres
+      host: postgres
+      user: postgres
+      pass: mysecretpass
+      port: 5432
+      schema: dbt_unit_testing
+      dbname: postgres
+      threads: 1
