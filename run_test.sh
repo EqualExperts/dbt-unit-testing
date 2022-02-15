@@ -1,8 +1,8 @@
 #!/bin/bash
-VENV="venv/bin/activate"
+VENV="venv-$1/bin/activate"
 
 if [[ ! -f $VENV ]]; then
-    python3 -m venv venv
+    python3 -m venv venv-$1
     . $VENV
 
     pip install --upgrade pip setuptools
