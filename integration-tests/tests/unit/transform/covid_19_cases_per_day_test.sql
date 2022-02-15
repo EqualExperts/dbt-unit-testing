@@ -22,7 +22,7 @@ UNION ALL
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
-    select cast('2021-05-07' as Date) as day, 20 as cases
+    select cast('2021-05-06' as Date) as day, 20 as cases
   {% endcall %}
 {% endcall %}
  
