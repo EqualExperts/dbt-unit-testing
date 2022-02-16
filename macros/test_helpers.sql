@@ -46,6 +46,6 @@
     EXCEPT
 {%- endmacro %}
 
-{% macro bigquery__sql_expect() %}
+{% macro bigquery__sql_except() %}
     EXCEPT DISTINCT
 {% endmacro %}
