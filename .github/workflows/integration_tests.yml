@@ -2,14 +2,13 @@ name: Dbt Unit Testing
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
-  build:
-
+  integration-tests-snowflake:
     runs-on: ubuntu-latest
     environment: test
     env:
@@ -20,22 +19,51 @@ jobs:
       SNOWFLAKE_TEST_WAREHOUSE: ${{ secrets.SNOWFLAKE_TEST_WAREHOUSE }}
 
     steps:
-    - uses: 'actions/checkout@v2'
+      - uses: "actions/checkout@v2"
 
-    - id: 'auth'
-      name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
-      with:
-        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-    
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v0'
-    
-    - name: test bigquery
-      run: ./run_test.sh bigquery
-      
-    - name: test snowflake
-      run: ./run_test.sh snowflake
+      - name: test snowflake
+        run: ./run_test.sh snowflake
 
-    - name: test postgres
-      run: cd integration-tests && make TARGET=postgres
+  integration-tests-bigquery:
+    runs-on: ubuntu-latest
+    environment: test
+
+    steps:
+      - uses: "actions/checkout@v2"
+
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v0"
+        with:
+          credentials_json: "${{ secrets.GOOGLE_CREDENTIALS }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v0"
+
+      - name: test bigquery
+        run: ./run_test.sh bigquery
+
+  integration-tests-postgres:
+    runs-on: ubuntu-latest
+    environment: test
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: "actions/checkout@v2"
+
+      - name: test postgres
+        run: ./run_test.sh postgres
