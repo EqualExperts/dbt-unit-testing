@@ -36,3 +36,16 @@
 {% macro debug(value) %}
   {% do log (value, info=true) %}
 {% endmacro %}
+
+{% macro sql_except() -%}
+    {{ return(adapter.dispatch('sql_except','dbt_unit_testing')()) }}
+{%- endmacro %}
+
+
+{% macro default__sql_except() -%}
+    EXCEPT
+{%- endmacro %}
+
+{% macro bigquery__sql_expect() %}
+    EXCEPT DISTINCT
+{% endmacro %}
