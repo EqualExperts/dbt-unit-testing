@@ -5,6 +5,8 @@ country_id,
     SUM(COALESCE((payload::json->0->>'newCases')::int,0)) as cases
 {% elif target.type == 'bigquery' %}
     SUM(COALESCE(CAST(JSON_EXTRACT(payload,'$[0].newCases')  AS INT),0)) as cases
+{% elif target.type == 'snowflake' %}
+    SUM(COALESCE(PARSE_JSON(payload)[0].newCases,0)) as cases
 {% else %}
     {{ exceptions.raise_compiler_error(target.type ~" not supported in this project") }}
 {% endif %}

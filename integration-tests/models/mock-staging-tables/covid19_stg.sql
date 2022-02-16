@@ -1,7 +1,7 @@
 {{ config(materialized='table')}}
-with values as (
+with val as (
 select cast('2020-01-01' as Date) as day,
 '' as country_id,
 '{}' as payload
 )
-select * from values where country_id = 'test'
+select * from val where country_id = 'test'

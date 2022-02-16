@@ -17,3 +17,14 @@ integration_tests:
       schema: dbt_unit_testing
       dbname: postgres
       threads: 1
+
+    snowflake:  
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_TEST_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_TEST_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_TEST_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_TEST_ROLE') }}"
+      database: DBT_UNIT_TESTING
+      warehouse: "{{ env_var('SNOWFLAKE_TEST_WAREHOUSE') }}"
+      schema: dbt_unit_testing
+      threads: 1
