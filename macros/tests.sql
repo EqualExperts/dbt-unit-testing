@@ -86,12 +86,12 @@
 
     extra_entries as (
     select '+' as diff, count, {{columns}} from actual 
-    except distinct
+    except
     select '+' as diff, count, {{columns}} from expectations_with_count),
 
     missing_entries as (
     select '-' as diff, count, {{columns}} from expectations_with_count
-    except distinct
+    except
     select '-' as diff, count, {{columns}} from actual)
     
     select * from extra_entries

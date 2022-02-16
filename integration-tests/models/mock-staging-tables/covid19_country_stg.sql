@@ -1,7 +1,7 @@
 {{ config(materialized='table')}}
-with values as (
+with val as (
 select 
 '' as country_id,
 '' country_name
 )
-select * from values where country_name = 'test'
+select * from val where country_name = 'test'

@@ -119,7 +119,7 @@ The first line was not on the model but the second line was.
 
 [x] BigQuery
 
-[ ] Snowflake
+[x] Snowflake
 
 [x] Postgres
 
