@@ -12,6 +12,13 @@ jobs:
 
     runs-on: ubuntu-latest
     environment: test
+    env:
+      SNOWFLAKE_TEST_ACCOUNT: ${{ secrets.SNOWFLAKE_TEST_ACCOUNT }}
+      SNOWFLAKE_TEST_USER: ${{ secrets.SNOWFLAKE_TEST_USER }}
+      SNOWFLAKE_TEST_PASSWORD: ${{ secrets.SNOWFLAKE_TEST_PASSWORD }}
+      SNOWFLAKE_TEST_ROLE: ${{ secrets.SNOWFLAKE_TEST_ROLE }}
+      SNOWFLAKE_TEST_WAREHOUSE: ${{ secrets.SNOWFLAKE_TEST_WAREHOUSE }}
+
     steps:
     - uses: 'actions/checkout@v2'
 

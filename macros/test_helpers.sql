@@ -41,7 +41,6 @@
     {{ return(adapter.dispatch('sql_except','dbt_unit_testing')()) }}
 {%- endmacro %}
 
-
 {% macro default__sql_except() -%}
     EXCEPT
 {%- endmacro %}
