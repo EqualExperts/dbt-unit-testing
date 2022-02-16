@@ -36,6 +36,11 @@ jobs:
       
     - name: test snowflake
       run: ./run_test.sh snowflake
+    
+    - name: setup postgres
+      uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: '11'
 
     - name: test postgres
-      run: cd integration-tests && make TARGET=postgres
+      run: ./run_test.sh postgres

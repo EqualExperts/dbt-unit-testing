@@ -10,9 +10,9 @@ integration_tests:
     
     postgres:
       type: postgres
-      host: postgres
+      host: localhost
       user: postgres
-      pass: mysecretpass
+      pass: ""
       port: 5432
       schema: dbt_unit_testing
       dbname: postgres
