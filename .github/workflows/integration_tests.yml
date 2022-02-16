@@ -26,6 +26,9 @@ jobs:
     
     - name: test bigquery
       run: ./run_test.sh bigquery
+      
+    - name: test snowflake
+      run: ./run_test.sh snowflake
 
     - name: test postgres
       run: cd integration-tests && make TARGET=postgres
