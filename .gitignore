@@ -7,4 +7,5 @@ dbt_packages/
 logs/
 venv-*/
 venv/
+.venv/
 integration-tests/ci/.user.yml
