@@ -1,1 +1,0 @@
-select * from {{ref('covid19_stats')}} where cases < 0
