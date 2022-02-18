@@ -93,7 +93,9 @@ The goal is to write the test, write the model, and then run the test (with “d
 ```
 
 #### Mock sources and models
+
 To be able to mock the models and sources in tests, in your dbt models you should use the macros  **dbt_unit_testing.ref** and **dbt_unit_testing.source**, for example:
+
 ```sql
 select day,
 country_name,
@@ -102,8 +104,8 @@ from {{ dbt_unit_testing.ref('covid19_cases_per_day') }}
      JOIN {{ dbt_unit_testing.source('dbt_unit_testing','covid19_country_stg') }} 
      USING (country_id)
 
-
 ```
+
 ### Convenience features
 
 - You can define multiple tests in the same file using `UNION ALL` [here](integration-tests/tests/unit/transform/covid_19_cases_per_day_test.sql).
