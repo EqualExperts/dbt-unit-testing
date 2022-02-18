@@ -9,7 +9,7 @@
       {%- if model_name not in test_inputs -%}
         {% do depends_on_filtered.append(d) %}
       {%- endif -%}
-    {%- endfor %}
+    {%- endfor -%}
 
     {%- set sql_with_dependencies -%}
       {%- for d in depends_on_filtered -%}
@@ -23,7 +23,7 @@
         {%- if not loop.last -%}
           ,
         {%- endif -%}
-      {%- endfor %}
+      {%- endfor -%}
     {%- endset -%}
 
     {%- set full_sql -%}

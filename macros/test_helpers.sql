@@ -1,12 +1,12 @@
 {% macro extract_columns(query) %}
-  {% if execute %}
+  {%- if execute -%}
     {% set results = run_query(query) %}
     {%- for column in results.columns -%}
       {{column.name}}
     {%- if not loop.last -%}
       ,
     {%- endif -%}
-    {% endfor %}
+    {%- endfor -%}
   {%- endif -%}
 {% endmacro %}
 
