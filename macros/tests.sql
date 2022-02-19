@@ -30,15 +30,30 @@
 {%- endif -%}
 {% endmacro %}
 
-{% macro mock_ref(model_name) %}
-    {{ dbt_unit_testing.mock_input(model_name, '', caller()) }}
+{% macro build_input_values_sql(input_values, options) %}
+    {% set unit_tests_config = var("unit_tests_config", {}) %}
+    {% set input_format = options.get("input_format", unit_tests_config.get("input_format", "sql")) %}
+
+    {% set input_values_sql = input_values %}
+
+    {% if input_format == "csv" %}
+      {% set input_values_sql = dbt_unit_testing.sql_from_csv_input(input_values, options) %}
+    {%- endif -%}
+
+    {% do return (input_values_sql) %}
 {% endmacro %}
 
-{% macro mock_source(source_name, model_name) %}
-    {{ dbt_unit_testing.mock_input(model_name, source_name, caller()) }}
+{% macro mock_ref(model_name, options={}) %}
+    {{dbt_unit_testing. mock_input(model_name, '', caller(), options) }}
 {% endmacro %}
 
-{% macro mock_input(model_name, source_name, input_values_sql) %}
+{% macro mock_source(source_name, model_name, options={}) %}
+    {{ dbt_unit_testing.mock_input(model_name, source_name, caller(), options) }}
+{% endmacro %}
+
+{% macro mock_input(model_name, source_name, input_values, options) %}
+    {% set input_values_sql = dbt_unit_testing.build_input_values_sql(input_values, options) %}
+
     {%- set model -%}
       {%- if source_name %}
         {{ builtins.source(source_name, model_name | string) }}
@@ -61,8 +76,8 @@
 
 {% endmacro %}
 
-{% macro expect() %}
-    {%- set model_sql = caller() -%}
+{% macro expect(options={}) %}
+    {%- set model_sql = dbt_unit_testing.build_input_values_sql(caller(), options) -%}
     {%- set input_as_json = '"__EXPECTATIONS__": "' + dbt_unit_testing.sql_encode(model_sql) + '",' -%}
     {% do return (input_as_json) %}
 {% endmacro %}
