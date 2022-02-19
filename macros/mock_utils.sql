@@ -15,7 +15,7 @@
     {% set c = col.split(type_separator) | list %}
     {% set col_name = c[0] %}
     {% set col_type = c[1] %}
-    {% set ns.col_names = ns.col_names + ['"' ~ col_name ~ '"'] %}
+    {% set ns.col_names = ns.col_names + [dbt_unit_testing.quote_column_name(col_name)] %}
     {% set ns.col_types = ns.col_types + [col_type] %}
   {% endfor %}
 
@@ -28,20 +28,41 @@
       {% if col_type is defined %}
         {% set col_value = "CAST(" ~ col_value ~ " as " ~ col_type ~ ")" %}
       {% endif %}
+      {% set col_value = col_value ~ " as " ~ ns.col_names[loop.index-1] %}
       {% set ns.col_values = ns.col_values + [col_value] %}
     {% endfor %}
 
     {% set col_values = ns.col_values | join(",") %}
-    {% set sql_row = "(" ~ col_values ~ ")" %}
+    {% set sql_row = "select " ~ col_values %}
     {% set ns.row_values = ns.row_values + [sql_row] %}
   {% endfor %}
 
-  {% set sql_cols = ns.col_names | join(",") %}
-  {% set sql_row_values = ns.row_values | join(",") %}
-  {% set sql = "select * from (values \n" %}
-  {% set sql = sql ~ sql_row_values ~ "\n" %}
-  {% set sql = sql ~ ") as t(" ~ sql_cols ~ ")\n" %}
+  {% set sql = ns.row_values | join("\n union all\n") %}
 
   {% do return (sql) %}
 
  {% endmacro %}
+
+{% macro quote_column_name(column_name) %}
+    {{ return(adapter.dispatch('quote_column_name','dbt_unit_testing')(column_name)) }}
+{% endmacro %}
+
+{% macro default__quote_column_name(column_name) -%}
+    {% if column_name.startswith('"') %}
+      {{ return(column_name) }}
+    {% else %}
+      {{ return('"' ~ column_name ~ '"') }}
+    {% endif %}
+{%- endmacro %}
+
+{% macro bigquery__quote_column_name(column_name) %}
+    {{ return(column_name) }}
+{% endmacro %}
+
+{% macro snowflake__quote_column_name(column_name) %}
+    {% if column_name.startswith('"') %}
+      {{ return(column_name) }}
+    {% else %}
+      {{ return('"' ~ column_name | upper ~ '"') }}
+    {% endif %}
+{% endmacro %}
