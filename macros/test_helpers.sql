@@ -2,7 +2,7 @@
   {% if execute %}
     {% set results = run_query(query) %}
     {%- for column in results.columns -%}
-      {{column.name}}
+      {{ dbt_unit_testing.quote_column_name(column.name) }}
     {%- if not loop.last -%}
       ,
     {%- endif -%}

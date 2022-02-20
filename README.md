@@ -81,13 +81,75 @@ The goal is to write the test, write the model, and then run the test (with “d
 ### Example of a test
 
 ```jinja
-{% call dbt_unit_testing.test('covid19_cases_per_day', 'empty payload') %}
+{% call dbt_unit_testing.test('covid19_cases_per_day') %}
   {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_stg') %}
     select CAST('2021-05-05' as date) as day, '[{}]' as payload
+    union all
+    select CAST('2021-05-06' as date) as day, '[{"newCases": 20}]' as payload
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
     select cast('2021-05-05' as Date) as day, 0 as cases
+    union all
+    select cast('2021-05-06' as Date) as day, 20 as cases
+  {% endcall %}
+{% endcall %}
+```
+
+### Different ways to build mock values
+
+Instead of using standard sql to define your input values, you can use a more tabular way, like this:
+
+```jinja
+{% call dbt_unit_testing.test('covid19_cases_per_day') %}
+  {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_stg', {"input_format": "csv"}) %}
+    day::Date, payload
+    '2021-05-05', '[{}]'
+    '2021-05-06', '[{"newCases": 20}]'
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect({"input_format": "csv"}) %}
+    day::Date, cases
+    '2021-05-05', 0
+    '2021-05-06', 20
+  {% endcall %}
+{% endcall %}
+```
+
+All the unit testing related macros (**`mock_ref`**, **`mock_source`**, **`expect`**) accept an `options` parameter, that can be used to specify the following:
+
+- `input_format`: "sql" or "csv" (default = "sql")
+- `column_separator` (default = ",")
+- `type_separator` (default = "::")
+- `line_separator` (default = "\n")
+
+(the last three options are used only for `csv` format)
+
+These defaults can be also be changed project wise, in the vars section of your `dbt_project.yaml`:
+
+```yaml
+vars:
+  unit_tests_config:
+    input_format: "csv"
+    column_separator: "|"
+    line_separator: "\n"
+    type_separator: "::"
+```
+
+With the above configuration you could write your tests like this:
+
+```jinja
+{% call dbt_unit_testing.test('covid19_cases_per_day') %}
+  {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_stg') %}
+    day::Date    | payload
+    '2021-05-05' | '[{}]'
+    '2021-05-06' | '[{"newCases": 20}]'
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect() %}
+    day::Date    | cases
+    '2021-05-05' |  0
+    '2021-05-06' |  20
   {% endcall %}
 {% endcall %}
 ```
@@ -106,6 +168,19 @@ from {{ dbt_unit_testing.ref('covid19_cases_per_day') }}
 
 ```
 
+Alternatively, if you prefer to keep using the standard `ref` macro in the models, you can add these macros to your project:
+
+```jinja
+{% macro ref(model_name) %}
+   {{ return(dbt_unit_testing.ref(model_name)) }}
+{% endmacro %}
+
+{% macro source(source, model_name) %}
+   {{ return(dbt_unit_testing.source(source, model_name)) }}
+{% endmacro %}
+```
+
+
 ### Convenience features
 
 - You can define multiple tests in the same file using `UNION ALL` [here](integration-tests/tests/unit/transform/covid_19_cases_per_day_test.sql).
@@ -121,10 +196,10 @@ The test macro provides visual feedback when a test fails showing what went wron
 ```yaml
 MODEL: covid19_stats
 TEST:  Test country name join
-| | diff | count |        day | cases | country_name   |
-| | ---- | ----- | ---------- | ----- | -------------- |
-| | -    |     1 | 2021-06-06 |    10 | United Kingdom |
-| | +    |     1 | 2021-05-05 |    10 | United Kingdom |
+| diff | count |        day | cases | country_name   |
+| ---- | ----- | ---------- | ----- | -------------- |
+| -    |     1 | 2021-06-06 |    10 | United Kingdom |
+| +    |     1 | 2021-05-05 |    10 | United Kingdom |
 ```
 
 The first line was not on the model but the second line was.
