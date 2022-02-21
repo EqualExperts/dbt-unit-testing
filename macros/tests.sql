@@ -52,28 +52,27 @@
 {% endmacro %}
 
 {% macro mock_input(model_name, source_name, input_values, options) %}
+
+  {% if execute %}
     {% set input_values_sql = dbt_unit_testing.build_input_values_sql(input_values, options) %}
 
-    {%- set model -%}
-      {%- if source_name %}
-        {{ builtins.source(source_name, model_name | string) }}
-      {%- else -%}
-        {{ builtins.ref(model_name) | string}}
-      {%- endif -%}
-    {%- endset -%}
-
     {% set model_sql %}
-      {%- set extra_columns = dbt_unit_testing.extract_columns_difference('select * from ' + model + ' where false', input_values_sql) -%}
-        select * from ({{ input_values_sql }}) as {{model_name}}_tmp_1 {{ ' ' }}
-      {%- if extra_columns -%}
-        left join (select {{ extra_columns }}
-        from {{ model }}) as {{model_name}}_tmp_2 on false
-      {%- endif -%}      
+      {% set node = graph.sources["source." + project_name + "." + source_name + "." + model_name] if source_name else  graph.nodes["model." + project_name + "." + model_name]  %}
+      {% set model_columns = node.columns.keys() %}
+      {% set extra_columns = dbt_unit_testing.extract_columns_difference_as_nulls(model_columns | list, input_values_sql).lstrip() %}
+
+      {% if extra_columns %}
+        {% set extra_columns = extra_columns[:-1] + " " %}
+      {% endif%}
+        select * {{ ' ' }} 
+        {%- if extra_columns -%}
+        , {{extra_columns}} 
+        {%- endif -%}
+        from ({{ input_values_sql }}) as {{model_name}}_tmp_1 {{ ' ' }} 
     {%- endset -%}
-    
     {%- set input_as_json = '"' + model_name + '": "' + dbt_unit_testing.sql_encode(model_sql) + '",' -%}
     {% do return (input_as_json) %}
-
+  {% endif %}
 {% endmacro %}
 
 {% macro expect(options={}) %}
