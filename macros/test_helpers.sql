@@ -19,10 +19,12 @@
   {% endif %}
 {% endmacro %}
 
-{% macro extract_columns_difference(query1, query2) %}
-  {% set cl1 = dbt_unit_testing.extract_columns_list(query1) %}
+{% macro extract_columns_difference_as_nulls(columns, query2) %}
   {% set cl2 = dbt_unit_testing.extract_columns_list(query2) %}
-  {% do return (cl1 | reject('in', cl2) | join(',')) %}
+  {% set columns = columns | list | reject('in', cl2) %}
+  {%- for column in columns -%}
+    null as {{column}},
+  {%- endfor -%}
 {% endmacro %}
 
 {% macro sql_encode(s) %}

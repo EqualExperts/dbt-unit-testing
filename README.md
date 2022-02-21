@@ -46,6 +46,7 @@ The goal is to write the test, write the model, and then run the test (with “d
 
 - Use fake inputs on any model or ref
 - Define fake inputs with sql
+- The tests run isolated inside a CTE without Db dependencies.
 - Focus the test on what’s important
 - Provide fast and valuable feedback
 - Write more than one test on a dbt test file
