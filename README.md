@@ -24,7 +24,7 @@ The line between unit and integration tests is sometimes a bit blurred. This is 
 
 We can think of a dbt model as a function, where the inputs are other models, and the output is the result of its SQL. A unit test in dbt would be a test where we provide fake inputs to a model, and then we check the results against some expectations.
 
-However, a model in dbt can belong to a long chain of models (see image below), each transforming the data in its own rules. We could test a model by providing fake inputs to the first models in that chain and asserting the results on the final model. We would be checking all the intermediate transformations along the way. This, on the other end, could be called an integration test.
+However, a model in dbt can belong to a long chain of models, each transforming the data in its own rules. We could test a model by providing fake inputs to the first models in that chain and asserting the results on the final model. We would be checking all the intermediate transformations along the way. This, on the other end, could be called an integration test.
 
 These integration tests are harder to write because we have to think of how the data is transformed throughout all those models until it reaches the model we want to test. However, they provide an extra level of confidence. As usual, we need to keep a good balance between these two types of tests.
 
@@ -32,21 +32,14 @@ As we will see, using this definition, our framework will allow us to create bot
 
 ### What do you want to achieve?
 
-We came up with a list of requirements that we would like to fulfill when writing tests in dbt:
-
-Use fake inputs on any model
-Focus the test on what’s important
-Provide fast and valuable feedback
-Write more than one test on a dbt test file
 We want to write dbt tests using TDD and receive fast feedback on the results. Running one or more dbt models each time we change them, as we were doing on the previous approach, was not the best way to do it, and we wanted to remove this step.
-
 The goal is to write the test, write the model, and then run the test (with “dbt test”).
 
 ### Main features
 
-- Use fake inputs on any model or ref
-- Define fake inputs with sql
-- The tests run isolated inside a CTE without Db dependencies.
+- Use fake inputs on any model or source
+- Define fake inputs with sql or csv format within the test
+- Run tests without need to run dbt and install the models into a database.
 - Focus the test on what’s important
 - Provide fast and valuable feedback
 - Write more than one test on a dbt test file
@@ -181,6 +174,22 @@ Alternatively, if you prefer to keep using the standard `ref` macro in the model
 {% endmacro %}
 ```
 
+Also make sure you declare the columns in your sources, they are used when mocking a source. Example:
+
+```yaml
+sources:
+  - name: dbt_unit_testing
+    tables:
+      - name: covid19_stg
+        columns:
+          - name: day
+          - name: country_id
+          - name: payload
+      - name: covid19_country_stg
+        columns:
+          - name: country_id
+          - name: country_name
+```
 
 ### Convenience features
 
