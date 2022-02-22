@@ -1,10 +1,13 @@
 ### Run tests locally
-You need to change the ci/profiles.yml postgres:
+To run the integration tests on your local machine using postgres, you can do the following:
 
-```yml
+#### Change the ci/profiles.yml
+
+```diff
    postgres:
       type: postgres
-      host: <strike>localhost</strike>postgres
+-     host: localhost
++     host: postgres
       user: postgres
       pass: postgres
       port: 5432
@@ -12,6 +15,8 @@ You need to change the ci/profiles.yml postgres:
       dbname: postgres
       threads: 1
 ```
+
+#### Run the following command inside the integration_tests folder
 
 ```bash
 make TARGET=postgres
