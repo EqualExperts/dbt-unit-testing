@@ -45,7 +45,7 @@
 {% endmacro %}
 
 {% macro node_by_id (node_id) %}
-  {{ return (graph.nodes[node_id] if node_id.resource_type == 'model' else graph.sources[node_id]) }}
+  {{ return (graph.nodes[node_id] if node_id.startswith('model') else graph.sources[node_id]) }}
 {% endmacro %}
 
 {% macro model_node (model_name) %}
@@ -61,4 +61,14 @@
     select * from {{ node.schema }}.{{ node.name }} where false
   {%- endset -%}
   {{ return (node.columns if node.columns else dbt_unit_testing.extract_columns_list(source_sql)) }}
+{% endmacro %}
+
+{% macro fake_source_sql(node) %}
+  {% if node.columns %}
+    select {{ dbt_unit_testing.map(dbt_unit_testing.source_columns(node), dbt_unit_testing.set_as_null) | join (",") }}
+  {% else %}
+    select {{ dbt_unit_testing.source_columns(node) | join (",") }}
+    from {{ node.schema }}.{{ node.name }}
+    where false
+  {% endif %}
 {% endmacro %}

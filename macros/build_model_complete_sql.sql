@@ -22,7 +22,7 @@
             {{ render(node.raw_sql) }}
         {%- else -%}
           {% if include_sources %}
-              select {{ dbt_unit_testing.map(dbt_unit_testing.source_columns(node), dbt_unit_testing.set_as_null) | join (",") }} where false
+            {{ dbt_unit_testing.fake_source_sql(node) }}
           {%- endif -%}
         {%- endif -%}
           )
@@ -46,8 +46,9 @@
 {% macro build_model_dependencies(node, include_sources) %}
   {% set model_dependencies = [] %}
   {% for d in node.depends_on.nodes %}
-    {% if d.resource_type == 'model' %}
-      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(graph.nodes[d], include_sources) %}
+    {% set node = dbt_unit_testing.node_by_id(d) %}
+    {% if node.resource_type == 'model' %}
+      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node, include_sources) %}
       {% for cmd in child_model_dependencies %}
         {{ model_dependencies.append(cmd) }}
       {% endfor %}
