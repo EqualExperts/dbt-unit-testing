@@ -1,24 +1,30 @@
-{% macro build_model_complete_sql(model_name, test_inputs) %}
+{% macro build_model_complete_sql(model_name, test_inputs, include_sources=false) %}
   {% if execute %}
-    {% set node = graph.nodes["model." + project_name + "." + model_name] %}
+    {% set node = dbt_unit_testing.model_node(model_name) %}
 
-    {% set depends_on = dbt_unit_testing.build_depends_on(node) %}
-    {% set depends_on_filtered = [] %}
+    {% set depends_on = dbt_unit_testing.build_model_dependencies(node, include_sources) %}
+    {% set depends_on_without_inputs = [] %}
     {%- for d in depends_on -%}
-      {% set model_name = d.split('.')[2] %}
-      {%- if model_name not in test_inputs -%}
-        {% do depends_on_filtered.append(d) %}
+      {% set node = dbt_unit_testing.node_by_id(d) %}
+      {%- if node.name not in test_inputs -%}
+        {{ depends_on_without_inputs.append(d) }}
       {%- endif -%}
     {%- endfor %}
 
     {%- set sql_with_dependencies -%}
-      {%- for d in depends_on_filtered -%}
+      {%- for d in depends_on_without_inputs -%}
         {%- if loop.first -%}
           {{ 'with ' }}
         {%- endif -%}
-        {% set model_name = d.split('.')[2] %}
-          {{ model_name }} as (
-            {{ render(graph.nodes[d].raw_sql) }}
+        {% set node = dbt_unit_testing.node_by_id(d) %}
+          {{ node.name }} as (
+        {%- if node.resource_type == 'model' -%}
+            {{ render(node.raw_sql) }}
+        {%- else -%}
+          {% if include_sources %}
+              select {{ dbt_unit_testing.map(dbt_unit_testing.source_columns(node), dbt_unit_testing.set_as_null) | join (",") }} where false
+          {%- endif -%}
+        {%- endif -%}
           )
         {%- if not loop.last -%}
           ,
@@ -31,24 +37,28 @@
       select * from ({{ render(node.raw_sql) }}) as tmp
     {%- endset -%}
 
-    {{ full_sql }}
+    {{ return (full_sql) }}
 
   {%- endif -%}
 
 {% endmacro %}
 
-{% macro build_depends_on(node, depends_list) %}
-  {% set depends_list = [] %}
-  {%- for d in node.depends_on.nodes -%}
-    {% if d.startswith('model') %}
-      {% set new_depends_list = dbt_unit_testing.build_depends_on(graph.nodes[d]) %}
-      {%- for dd in new_depends_list -%}
-        {%- do depends_list.append(dd) -%}
-      {%- endfor -%}
-      {%- do depends_list.append(d) -%}
+{% macro build_model_dependencies(node, include_sources) %}
+  {% set model_dependencies = [] %}
+  {% for d in node.depends_on.nodes %}
+    {% if d.resource_type == 'model' %}
+      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(graph.nodes[d], include_sources) %}
+      {% for cmd in child_model_dependencies %}
+        {{ model_dependencies.append(cmd) }}
+      {% endfor %}
+      {{ model_dependencies.append(d) }}
+    {% else %}
+      {% if include_sources %}
+        {{ model_dependencies.append(d) }}
+      {% endif %}
     {% endif %}
-  {%- endfor -%}
+  {% endfor %}
 
-  {% do return (depends_list | unique | list) %}
+  {{ return (model_dependencies | unique | list) }}
 
 {% endmacro %}

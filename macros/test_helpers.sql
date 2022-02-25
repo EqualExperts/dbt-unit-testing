@@ -1,38 +1,23 @@
-{% macro extract_columns(query) %}
+{% macro extract_columns_list(query) %}
   {% if execute %}
     {% set results = run_query(query) %}
-    {%- for column in results.columns -%}
-      {{ dbt_unit_testing.quote_column_name(column.name) }}
-    {%- if not loop.last -%}
-      ,
-    {%- endif -%}
-    {% endfor %}
-  {%- endif -%}
-{% endmacro %}
-
-{% macro extract_columns_list(query) %}
-  {% set results = run_query(query) %}
-  {% if execute %}
-    {% do return(results.columns | map(attribute='name') | map('lower') | list) %}
+    {{ return(results.columns | map(attribute='name') | list) }}
   {% else %}
-    {% do return([]) %}
+    {{ return([]) }}
   {% endif %}
 {% endmacro %}
 
-{% macro extract_columns_difference_as_nulls(columns, query2) %}
-  {% set cl2 = dbt_unit_testing.extract_columns_list(query2) %}
-  {% set columns = columns | list | reject('in', cl2) %}
-  {%- for column in columns -%}
-    null as {{column}},
-  {%- endfor -%}
+{% macro extract_columns_difference(cl1, cl2) %}
+  {% set columns = cl1 | list | reject('in', cl2) | list %}
+  {{ return(columns) }}
 {% endmacro %}
 
 {% macro sql_encode(s) %}
-  {%- do return (s.replace('"', '$$$$$$$$$$').replace('\n', '##########')) %}
+  {{ return (s.replace('"', '$$$$$$$$$$').replace('\n', '##########')) }}
 {% endmacro %}
 
 {% macro sql_decode(s) %}
-  {%- do return (s.replace('$$$$$$$$$$', '"').replace('##########', '\n')) -%}
+  {{ return (s.replace('$$$$$$$$$$', '"').replace('##########', '\n')) -}}
 {% endmacro %}
 
 {% macro debug(value) %}
@@ -49,4 +34,31 @@
 
 {% macro bigquery__sql_except() %}
     EXCEPT DISTINCT
+{% endmacro %}
+
+{% macro map(items, f) %}
+  {% set mapped_items=[] %}
+  {% for item in items %}
+    {% do mapped_items.append(f(item)) %}
+  {% endfor %}
+  {{ return (mapped_items) }}
+{% endmacro %}
+
+{% macro node_by_id (node_id) %}
+  {{ return (graph.nodes[node_id] if node_id.resource_type == 'model' else graph.sources[node_id]) }}
+{% endmacro %}
+
+{% macro model_node (model_name) %}
+  {{ return (graph.nodes["model." ~ project_name ~ "." ~ model_name]) }}
+{% endmacro %}
+
+{% macro source_node (source_name, model_name) %}
+  {{ return (graph.sources["source." ~ project_name ~ "." ~ source_name ~ "." ~ model_name]) }}
+{% endmacro %}
+
+{% macro source_columns(node) %}
+  {%- set source_sql -%}
+    select * from {{ node.schema }}.{{ node.name }} where false
+  {%- endset -%}
+  {{ return (node.columns if node.columns else dbt_unit_testing.extract_columns_list(source_sql)) }}
 {% endmacro %}
