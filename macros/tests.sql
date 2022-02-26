@@ -59,28 +59,32 @@
     {%- set model_sql -%}
       {%if source_name %}
         {% set node = dbt_unit_testing.source_node(source_name, model_name) %}
-        {% set model_columns = dbt_unit_testing.source_columns(node) %}
+        {{ dbt_unit_testing.fake_source_sql(node) }}
       {% else %}
-        {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_name, [], include_sources = true) %}
-        {% set model_columns = dbt_unit_testing.extract_columns_list(model_complete_sql) %}
+        {{ dbt_unit_testing.build_model_complete_sql(model_name, [], include_sources = true) }}
       {% endif %}
-
-      {% set input_columns = dbt_unit_testing.extract_columns_list(input_values_sql) %}
-      {% set extra_columns = dbt_unit_testing.extract_columns_difference(model_columns | list, input_columns | list) %}
-      {% set extra_columns_as_null = dbt_unit_testing.map(extra_columns, dbt_unit_testing.set_as_null) %}
-      {% set all_columns = ["*"] + extra_columns_as_null %}
-
-      select {{ all_columns | join(",") }}
-      from ({{ input_values_sql }}) as {{model_name}}_tmp
     {%- endset -%}
 
-    {%- set input_as_json = '"' ~ model_name  ~ '": "' ~ dbt_unit_testing.sql_encode(model_sql) ~ '",' -%}
+    {% set model_columns = dbt_unit_testing.extract_columns_list(model_sql) %}
+    {% set input_columns = dbt_unit_testing.extract_columns_list(input_values_sql) %}
+    {% set extra_columns = dbt_unit_testing.extract_columns_difference(model_columns, input_columns) %}
+
+    {%- set input_sql_with_all_columns -%}
+      select * from ({{input_values_sql}}) as {{model_name}}_tmp_1
+      {% if extra_columns %}
+      left join (select {{ extra_columns | join (",")}}
+                 from (select * from ({{ model_sql }}) as {{model_name}}_tmp_2) as {{model_name}}_tmp_3
+      ) as {{model_name}}_tmp_4 on false
+      {% endif %}
+    {%- endset -%}
+
+    {%- set input_as_json = '"' ~ model_name  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' -%}
     {{ return (input_as_json) }}
   {% endif %}
 {% endmacro %}
 
 {%- macro set_as_null(column) -%}
-  null as {{ column }}
+  cast(null as {{ dbt_utils.type_string() }}) as {{ column }}
 {%- endmacro -%}
 
 {% macro expect(options={}) %}
@@ -96,8 +100,8 @@
   {% set columns = dbt_unit_testing.map(columns, adapter.quote) | join(",") %}
 
   {%- set sql_for_running_test -%}
+    with
     {% for m, m_sql in test_inputs.items() %}
-      {%- if loop.first -%} {{ 'with ' }} {%- endif -%}
       {{ m }} as ({{ dbt_unit_testing.sql_decode(m_sql) }}),
     {% endfor %}
   
@@ -107,12 +111,12 @@
 
     extra_entries as (
     select '+' as diff, count, {{columns}} from actual 
-    {{ dbt_unit_testing.sql_except() }}
+    {{ dbt_utils.except() }}
     select '+' as diff, count, {{columns}} from expectations),
 
     missing_entries as (
     select '-' as diff, count, {{columns}} from expectations
-    {{ dbt_unit_testing.sql_except() }}
+    {{ dbt_utils.except() }}
     select '-' as diff, count, {{columns}} from actual)
     
     select * from extra_entries

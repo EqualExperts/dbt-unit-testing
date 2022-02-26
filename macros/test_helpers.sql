@@ -24,18 +24,6 @@
   {% do log (value, info=true) %}
 {% endmacro %}
 
-{% macro sql_except() -%}
-    {{ return(adapter.dispatch('sql_except','dbt_unit_testing')()) }}
-{%- endmacro %}
-
-{% macro default__sql_except() -%}
-    EXCEPT
-{%- endmacro %}
-
-{% macro bigquery__sql_except() %}
-    EXCEPT DISTINCT
-{% endmacro %}
-
 {% macro map(items, f) %}
   {% set mapped_items=[] %}
   {% for item in items %}
