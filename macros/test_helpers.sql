@@ -44,18 +44,18 @@
   {{ return (graph.sources["source." ~ project_name ~ "." ~ source_name ~ "." ~ model_name]) }}
 {% endmacro %}
 
-{% macro source_columns(node) %}
-  {%- set source_sql -%}
-    select * from {{ node.schema }}.{{ node.name }} where false
-  {%- endset -%}
-  {{ return (node.columns if node.columns else dbt_unit_testing.extract_columns_list(source_sql)) }}
-{% endmacro %}
-
 {% macro fake_source_sql(node) %}
   {% if node.columns %}
-    select {{ dbt_unit_testing.map(dbt_unit_testing.source_columns(node), dbt_unit_testing.set_as_null) | join (",") }}
+    {% set columns = [] %}
+    {% for c in node.columns.values() %}
+      {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
+    {% endfor %}
+    select {{ columns | join (",") }}
   {% else %}
-    select {{ dbt_unit_testing.source_columns(node) | join (",") }}
+    {%- set source_sql -%}
+      select * from {{ node.schema }}.{{ node.name }} where false
+    {%- endset -%}
+    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
     from {{ node.schema }}.{{ node.name }}
     where false
   {% endif %}

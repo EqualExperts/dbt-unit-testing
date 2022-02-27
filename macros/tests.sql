@@ -83,10 +83,6 @@
   {% endif %}
 {% endmacro %}
 
-{%- macro set_as_null(column) -%}
-  cast(null as {{ dbt_utils.type_string() }}) as {{ column }}
-{%- endmacro -%}
-
 {% macro expect(options={}) %}
     {%- set model_sql = dbt_unit_testing.build_input_values_sql(caller(), options) -%}
     {%- set input_as_json = '"__EXPECTATIONS__": "' ~ dbt_unit_testing.sql_encode(model_sql) ~ '",' -%}
