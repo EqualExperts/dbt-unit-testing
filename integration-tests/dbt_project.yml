@@ -17,6 +17,3 @@ clean-targets: # directories to be removed by `dbt clean`
   - "target"
   - "dbt_modules"
   - "dbt_packages"
-
-vars:
-  unit-test: false

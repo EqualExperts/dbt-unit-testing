@@ -1,52 +1,71 @@
-{% macro extract_columns(query) %}
+{% macro extract_columns_list(query) %}
   {% if execute %}
     {% set results = run_query(query) %}
-    {%- for column in results.columns -%}
-      {{ dbt_unit_testing.quote_column_name(column.name) }}
-    {%- if not loop.last -%}
-      ,
-    {%- endif -%}
-    {% endfor %}
-  {%- endif -%}
-{% endmacro %}
-
-{% macro extract_columns_list(query) %}
-  {% set results = run_query(query) %}
-  {% if execute %}
-    {% do return(results.columns | map(attribute='name') | map('lower') | list) %}
+    {{ return(results.columns | map(attribute='name') | list) }}
   {% else %}
-    {% do return([]) %}
+    {{ return([]) }}
   {% endif %}
 {% endmacro %}
 
-{% macro extract_columns_difference_as_nulls(columns, query2) %}
-  {% set cl2 = dbt_unit_testing.extract_columns_list(query2) %}
-  {% set columns = columns | list | reject('in', cl2) %}
-  {%- for column in columns -%}
-    null as {{column}},
-  {%- endfor -%}
+{% macro extract_columns_difference(cl1, cl2) %}
+  {% set columns = cl1 | list | reject('in', cl2) | list %}
+  {{ return(columns) }}
 {% endmacro %}
 
 {% macro sql_encode(s) %}
-  {%- do return (s.replace('"', '$$$$$$$$$$').replace('\n', '##########')) %}
+  {{ return (s.replace('"', '$$$$$$$$$$').replace('\n', '##########')) }}
 {% endmacro %}
 
 {% macro sql_decode(s) %}
-  {%- do return (s.replace('$$$$$$$$$$', '"').replace('##########', '\n')) -%}
+  {{ return (s.replace('$$$$$$$$$$', '"').replace('##########', '\n')) -}}
 {% endmacro %}
 
 {% macro debug(value) %}
   {% do log (value, info=true) %}
 {% endmacro %}
 
-{% macro sql_except() -%}
-    {{ return(adapter.dispatch('sql_except','dbt_unit_testing')()) }}
-{%- endmacro %}
-
-{% macro default__sql_except() -%}
-    EXCEPT
-{%- endmacro %}
-
-{% macro bigquery__sql_except() %}
-    EXCEPT DISTINCT
+{% macro map(items, f) %}
+  {% set mapped_items=[] %}
+  {% for item in items %}
+    {% do mapped_items.append(f(item)) %}
+  {% endfor %}
+  {{ return (mapped_items) }}
 {% endmacro %}
+
+{% macro node_by_id (node_id) %}
+  {{ return (graph.nodes[node_id] if node_id.startswith('model') else graph.sources[node_id]) }}
+{% endmacro %}
+
+{% macro model_node (model_name) %}
+  {{ return (graph.nodes["model." ~ project_name ~ "." ~ model_name]) }}
+{% endmacro %}
+
+{% macro source_node (source_name, model_name) %}
+  {{ return (graph.sources["source." ~ project_name ~ "." ~ source_name ~ "." ~ model_name]) }}
+{% endmacro %}
+
+{% macro fake_source_sql(node) %}
+  {% set source_relation = dbt_utils.get_relations_by_pattern(
+      schema_pattern=node.schema,
+      table_pattern=node.name
+  ) %}
+  {% if source_relation | length > 0 %}
+    {%- set source_sql -%}
+      select * from {{ node.schema }}.{{ node.name }} where false
+    {%- endset -%}
+    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    from {{ node.schema }}.{{ node.name }}
+    where false
+  {% else %}
+    {% if node.columns %}
+      {% set columns = [] %}
+      {% for c in node.columns.values() %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
+      {% endfor %}
+      select {{ columns | join (",") }}
+    {% else %}
+      {{ exceptions.raise_compiler_error("Source " ~ node.name ~ " columns must be declared in sources.yml, or it must exist in database") }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+

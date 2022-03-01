@@ -174,7 +174,7 @@ Alternatively, if you prefer to keep using the standard `ref` macro in the model
 {% endmacro %}
 ```
 
-Also make sure you declare the columns in your sources, they are used when mocking a source. Example:
+Also the sources columns must be available. If sources are not present in the database,  you have to declare them in your sources file. Example:
 
 ```yaml
 sources:
@@ -189,6 +189,19 @@ sources:
         columns:
           - name: country_id
           - name: country_name
+```
+
+You may need to specify the columns data type also, like this:
+
+```yaml
+sources:
+  - name: dbt_unit_testing
+    tables:
+      - name: covid19_stg
+        columns:
+          - name: day
+            data_type: integer
+          ...
 ```
 
 ### Convenience features

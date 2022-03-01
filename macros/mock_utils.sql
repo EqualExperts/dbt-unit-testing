@@ -1,5 +1,5 @@
 {% macro sql_from_csv(options={}) %}
-  {% do return (sql_from_csv_input(caller(), options)) %}
+  {{ return (sql_from_csv_input(caller(), options)) }}
 {% endmacro %}
 
 {% macro sql_from_csv_input(csv_table, options={}) %}
@@ -15,7 +15,7 @@
     {% set c = col.split(type_separator) | list %}
     {% set col_name = c[0] %}
     {% set col_type = c[1] %}
-    {% set ns.col_names = ns.col_names + [dbt_unit_testing.quote_column_name(col_name)] %}
+    {% set ns.col_names = ns.col_names + [col_name] %}
     {% set ns.col_types = ns.col_types + [col_type] %}
   {% endfor %}
 
@@ -39,30 +39,7 @@
 
   {% set sql = ns.row_values | join("\n union all\n") %}
 
-  {% do return (sql) %}
+  {{ return (sql) }}
 
  {% endmacro %}
 
-{% macro quote_column_name(column_name) %}
-    {{ return(adapter.dispatch('quote_column_name','dbt_unit_testing')(column_name)) }}
-{% endmacro %}
-
-{% macro default__quote_column_name(column_name) -%}
-    {% if column_name.startswith('"') %}
-      {{ return(column_name) }}
-    {% else %}
-      {{ return('"' ~ column_name ~ '"') }}
-    {% endif %}
-{%- endmacro %}
-
-{% macro bigquery__quote_column_name(column_name) %}
-    {{ return(column_name) }}
-{% endmacro %}
-
-{% macro snowflake__quote_column_name(column_name) %}
-    {% if column_name.startswith('"') %}
-      {{ return(column_name) }}
-    {% else %}
-      {{ return('"' ~ column_name | upper ~ '"') }}
-    {% endif %}
-{% endmacro %}
