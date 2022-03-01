@@ -15,7 +15,7 @@
     {% set c = col.split(type_separator) | list %}
     {% set col_name = c[0] %}
     {% set col_type = c[1] %}
-    {% set ns.col_names = ns.col_names + [adapter.quote(col_name)] %}
+    {% set ns.col_names = ns.col_names + [col_name] %}
     {% set ns.col_types = ns.col_types + [col_type] %}
   {% endfor %}
 

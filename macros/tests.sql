@@ -93,7 +93,7 @@
   {% set test_inputs_models = test_inputs.keys() | list %}
   {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_name, test_inputs_models) %}
   {% set columns = dbt_unit_testing.extract_columns_list(expectations) %}
-  {% set columns = dbt_unit_testing.map(columns, adapter.quote) | join(",") %}
+  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
 
   {%- set sql_for_running_test -%}
     with
