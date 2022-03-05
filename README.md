@@ -56,6 +56,12 @@ The goal is to write the test, write the model, and then run the test (with “d
 ### Skeleton of a test
 
 ```jinja
+{{
+    config(
+        tags=['unit-test']
+    )
+}}
+
 {% call dbt_unit_testing.test ('[Model to Test]','[Test Name]') %}
   {% call dbt_unit_testing.mock_ref ('[Model to Mock]') %}
      select ...
@@ -72,9 +78,23 @@ The goal is to write the test, write the model, and then run the test (with “d
 {% endcall %}
 ```
 
+Note the configuration lines at the begining of the test:
+
+```jinja
+{{
+    config(
+        tags=['unit-test']
+    )
+}}
+```
+
+This is required for these tests to work.
+
 ### Example of a test
 
 ```jinja
+{{ config(tags=['unit-test']) }}
+
 {% call dbt_unit_testing.test('covid19_cases_per_day') %}
   {% call dbt_unit_testing.mock_source('dbt_unit_testing_staging', 'covid19_stg') %}
     select CAST('2021-05-05' as date) as day, '[{}]' as payload
