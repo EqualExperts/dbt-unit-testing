@@ -13,11 +13,11 @@
 {% endmacro %}
 
 {% macro sql_encode(s) %}
-  {{ return (s.replace('"', '$$$$$$$$$$').replace('\n', '##########')) }}
+  {{ return (s.replace('"', '####_quote_####').replace('\n', '####_cr_####').replace('\t', '####_tab_####')) }}
 {% endmacro %}
 
 {% macro sql_decode(s) %}
-  {{ return (s.replace('$$$$$$$$$$', '"').replace('##########', '\n')) -}}
+  {{ return (s.replace('####_quote_####', '"').replace('####_cr_####', '\n').replace('####_tab_####', '\t')) -}}
 {% endmacro %}
 
 {% macro debug(value) %}

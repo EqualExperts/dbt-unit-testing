@@ -14,7 +14,7 @@
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
-    select  cast('2021-05-05' as Date) as day, 10 as cases,  'United Kingdom' as country_name    
+    select  cast('2021-05-05' as Date) as day, 10 as cases,  'United Kingdom' as country_name			
   {% endcall %}
 
 {% endcall %}
