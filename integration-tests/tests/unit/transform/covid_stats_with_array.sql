@@ -12,8 +12,10 @@
   {% call dbt_unit_testing.expect() %}
   {% if target.type == 'postgres' %}
     select  'UK' as country_id, '{20}'::bigint[] as cases
-  {% elif target.type in ('bigquery','snowflake') %}
+  {% elif target.type in ('bigquery') %}
     select  'UK' as country_id, [20] as cases
+  {% elif target.type in ('snowflake') %}
+    select  'UK' as country_id, array_construct(20) as cases
   {% else %}
     {{ exceptions.raise_compiler_error(target.type ~" not supported in this project") }}
   {% endif %}
