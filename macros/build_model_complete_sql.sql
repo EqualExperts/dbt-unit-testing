@@ -1,49 +1,65 @@
 {% macro build_model_complete_sql(model_name, test_inputs, include_sources=false) %}
   {% if execute %}
     {% set node = dbt_unit_testing.model_node(model_name) %}
-    {{ return (dbt_unit_testing.build_complete_sql_for_node(node, test_inputs, iinclude_sources)) }}
-  {% endif %}
-{% endmacro %}
 
-{% macro build_complete_sql_for_node(node, test_inputs, include_sources) %}
-
-    {% set dependencies = [] %}
-    {% if node.depends_on and node.depends_on.nodes %}
-      {% set dependencies = node.depends_on.nodes | unique %}
-    {% endif %}
-    {% set dependencies_without_inputs = [] %}
-    {%- for d in dependencies -%}
+    {% set depends_on = dbt_unit_testing.build_model_dependencies(node, include_sources) %}
+    {% set depends_on_without_inputs = [] %}
+    {%- for d in depends_on -%}
       {% set node = dbt_unit_testing.node_by_id(d) %}
       {%- if node.name not in test_inputs -%}
-        {{ dependencies_without_inputs.append(d) }}
+        {{ depends_on_without_inputs.append(d) }}
       {%- endif -%}
     {%- endfor %}
 
-    {%- set node_complete_sql -%}
-      {%- for d in dependencies_without_inputs -%}
+    {%- set sql_with_dependencies -%}
+      {%- for d in depends_on_without_inputs -%}
         {%- if loop.first -%}
           {{ 'with ' }}
         {%- endif -%}
-        {% set dependency_node = dbt_unit_testing.node_by_id(d) %}
-          {{ dependency_node.name }} as (
-            {{ dbt_unit_testing.build_complete_sql_for_node(dependency_node, test_inputs, include_sources) }}
+        {% set node = dbt_unit_testing.node_by_id(d) %}
+          {{ node.name }} as (
+        {%- if node.resource_type == 'model' -%}
+            {{ render(node.raw_sql) }}
+        {%- else -%}
+          {% if include_sources %}
+            {{ dbt_unit_testing.fake_source_sql(node) }}
+          {%- endif -%}
+        {%- endif -%}
           )
         {%- if not loop.last -%}
           ,
         {%- endif -%}
       {%- endfor %}
-
-      select * from (
-      {%- if node.resource_type == 'model' -%}
-          {{ render(node.raw_sql) }}
-      {%- else -%}
-          {{ dbt_unit_testing.fake_source_sql(node) }}
-      {%- endif -%}
-      ) as model_tmp
-
     {%- endset -%}
 
-    {{ return (node_complete_sql) }}
+    {%- set full_sql -%}
+      {{ sql_with_dependencies }}
+      select * from ({{ render(node.raw_sql) }}) as tmp
+    {%- endset -%}
+
+    {{ return (full_sql) }}
+
+  {%- endif -%}
 
 {% endmacro %}
 
+{% macro build_model_dependencies(node, include_sources) %}
+  {% set model_dependencies = [] %}
+  {% for d in node.depends_on.nodes %}
+    {% set node = dbt_unit_testing.node_by_id(d) %}
+    {% if node.resource_type == 'model' %}
+      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node, include_sources) %}
+      {% for cmd in child_model_dependencies %}
+        {{ model_dependencies.append(cmd) }}
+      {% endfor %}
+      {{ model_dependencies.append(d) }}
+    {% else %}
+      {% if include_sources %}
+        {{ model_dependencies.append(d) }}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  {{ return (model_dependencies | unique | list) }}
+
+{% endmacro %}
