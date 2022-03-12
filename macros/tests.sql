@@ -60,6 +60,9 @@
       {%if source_name %}
         {% set node = dbt_unit_testing.source_node(source_name, model_name) %}
         {{ dbt_unit_testing.fake_source_sql(node) }}
+      {% elif  "seed." ~ project_name ~ "." ~ model_name in graph.nodes  %}
+        {% set node = graph.nodes[ "seed." ~ project_name ~ "." ~ model_name] -%}
+        {{ dbt_unit_testing.fake_seed_sql(node) }}
       {% else %}
         {{ dbt_unit_testing.build_model_complete_sql(model_name, [], include_sources = true) }}
       {% endif %}

@@ -32,8 +32,8 @@
   {{ return (mapped_items) }}
 {% endmacro %}
 
-{% macro node_by_id (node_id) %}
-  {{ return (graph.nodes[node_id] if node_id.startswith('model') else graph.sources[node_id]) }}
+{% macro node_by_id (node_id) %}]
+  {{ return (graph.nodes[node_id] if node_id.startswith('model') or node_id.startswith('seed') else graph.sources[node_id]) }}
 {% endmacro %}
 
 {% macro model_node (model_name) %}
@@ -68,4 +68,31 @@
     {% endif %}
   {% endif %}
 {% endmacro %}
+
+{% macro fake_seed_sql(node) %}
+  {% set source_relation = dbt_utils.get_relations_by_pattern(
+      schema_pattern=node.schema,
+      table_pattern=node.name
+  ) %}
+  {% if source_relation | length > 0 %}
+    {%- set source_sql -%}
+      select * from {{ node.schema }}.{{ node.name }} where false
+    {%- endset -%}
+    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    from {{ node.schema }}.{{ node.name }}
+    where false
+  {% else %}
+    {% if node.config and node.config.column_types %}
+      {% set columns = [] %}
+      {% for c in node.config.column_types.keys() %}
+        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ c) %}
+      {% endfor %}
+      select {{ columns | join (",") }}
+    {% else %}
+      {{ exceptions.raise_compiler_error("Seed " ~ node.name ~ " columns must be declared in properties.yml, or it must exist in database") }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+
 
