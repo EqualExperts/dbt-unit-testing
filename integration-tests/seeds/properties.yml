@@ -1,8 +1,7 @@
 version: 2
 
 seeds:
-  - name: country_codes
+  - name: seed_test
     config:
       column_types:
-        country_code: varchar(2)
-        country_name: varchar(32)
+        value: numeric

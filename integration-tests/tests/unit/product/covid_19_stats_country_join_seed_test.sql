@@ -9,12 +9,12 @@
      select cast('2021-05-05' as Date) as day, 10 as cases, 'uk' as country_id
   {% endcall %}
  
-  {% call dbt_unit_testing.mock_ref('country_codes') %}
-    select 'uk' as country_code, 'United Kingdom' as country_name
+  {% call dbt_unit_testing.mock_ref('seed_test') %}
+    select 1 as value
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
-    select  cast('2021-05-05' as Date) as day, 10 as cases,  'United Kingdom' as country_name    
+    select  cast('2021-05-05' as Date) as day, 10 as cases, 1 as value
   {% endcall %}
 
 {% endcall %}
