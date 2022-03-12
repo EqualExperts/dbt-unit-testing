@@ -1,0 +1,7 @@
+version: 2
+
+seeds:
+  - name: seed_test
+    config:
+      column_types:
+        value: numeric
