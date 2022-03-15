@@ -70,3 +70,20 @@ jobs:
 
       - name: test postgres
         run: ./run_test.sh postgres
+
+  remove-safe-to-test-label-after-test-run:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      [
+        integration-tests-snowflake,
+        integration-tests-bigquery,
+        integration-tests-postgres,
+      ]
+    environment: test
+
+    steps:
+      - name: Manage PR Labels
+        uses: andymckay/labeler@1.0.4
+        with:
+          remove-labels: "safe to test"
