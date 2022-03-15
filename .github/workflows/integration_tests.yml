@@ -3,13 +3,14 @@ name: Dbt Unit Testing
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
+  pull_request_target:
+    types: [labeled]
   workflow_dispatch:
 
 jobs:
   integration-tests-snowflake:
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     environment: test
     env:
       SNOWFLAKE_TEST_ACCOUNT: ${{ secrets.SNOWFLAKE_TEST_ACCOUNT }}
@@ -26,6 +27,7 @@ jobs:
 
   integration-tests-bigquery:
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     environment: test
 
     steps:
@@ -45,6 +47,7 @@ jobs:
 
   integration-tests-postgres:
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     environment: test
 
     services:
