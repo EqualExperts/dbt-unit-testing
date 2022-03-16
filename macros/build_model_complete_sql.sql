@@ -1,8 +1,8 @@
-{% macro build_model_complete_sql(model_name, test_inputs) %}
+{% macro build_model_complete_sql(model_name, test_inputs, partial_mocking) %}
   {% if execute %}
     {% set node = dbt_unit_testing.model_node(model_name) %}
-
-    {% set model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
+    {% set build_parents = not partial_mocking %}
+    {% set model_dependencies = dbt_unit_testing.build_model_dependencies(node, build_parents=build_parents) %}
     {% set model_dependencies_not_in_mocked_inputs = [] %}
     {%- for d in model_dependencies -%}
       {% set node = dbt_unit_testing.node_by_id(d) %}
@@ -19,7 +19,11 @@
         {% set node = dbt_unit_testing.node_by_id(d) %}
           {{ node.name }} as (
         {%- if node.resource_type == 'model' -%}
+          {%- if partial_mocking -%}
+            {{ dbt_unit_testing.fake_model_sql(node) }}
+          {%- else -%}
             {{ render(node.raw_sql) }}
+          {%- endif -%}
         {%- elif node.resource_type == 'seed' -%}
             {{ dbt_unit_testing.fake_seed_sql(node) }}
         {%- else -%}
@@ -43,13 +47,13 @@
 
 {% endmacro %}
 
-{% macro build_model_dependencies(node) %}
+{% macro build_model_dependencies(node, build_parents=True) %}
   {% set model_dependencies = [] %}
   {% for d in node.depends_on.nodes %}
     {% set node = dbt_unit_testing.node_by_id(d) %}
-    {% if node.resource_type == 'model' %}
-      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
-      {% for cmd in child_model_dependencies %}
+    {% if node.resource_type == 'model' and build_parents %}
+      {% set parent_model_dependencies = dbt_unit_testing.build_model_dependencies(node, build_parents=True) %}
+      {% for cmd in parent_model_dependencies %}
         {{ model_dependencies.append(cmd) }}
       {% endfor %}
     {% endif %}
