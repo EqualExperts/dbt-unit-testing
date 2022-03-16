@@ -1,18 +1,18 @@
-{% macro build_model_complete_sql(model_name, test_inputs, include_sources=false) %}
+{% macro build_model_complete_sql(model_name, test_inputs) %}
   {% if execute %}
     {% set node = dbt_unit_testing.model_node(model_name) %}
 
-    {% set depends_on = dbt_unit_testing.build_model_dependencies(node, include_sources) %}
-    {% set depends_on_without_inputs = [] %}
-    {%- for d in depends_on -%}
+    {% set model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
+    {% set model_dependencies_not_in_mocked_inputs = [] %}
+    {%- for d in model_dependencies -%}
       {% set node = dbt_unit_testing.node_by_id(d) %}
       {%- if node.name not in test_inputs -%}
-        {{ depends_on_without_inputs.append(d) }}
+        {{ model_dependencies_not_in_mocked_inputs.append(d) }}
       {%- endif -%}
     {%- endfor %}
 
-    {%- set sql_with_dependencies -%}
-      {%- for d in depends_on_without_inputs -%}
+    {%- set cte_with_dependencies -%}
+      {%- for d in model_dependencies_not_in_mocked_inputs -%}
         {%- if loop.first -%}
           {{ 'with ' }}
         {%- endif -%}
@@ -20,10 +20,10 @@
           {{ node.name }} as (
         {%- if node.resource_type == 'model' -%}
             {{ render(node.raw_sql) }}
+        {%- elif node.resource_type == 'seed' -%}
+            {{ dbt_unit_testing.fake_seed_sql(node) }}
         {%- else -%}
-          {% if include_sources %}
             {{ dbt_unit_testing.fake_source_sql(node) }}
-          {%- endif -%}
         {%- endif -%}
           )
         {%- if not loop.last -%}
@@ -33,7 +33,7 @@
     {%- endset -%}
 
     {%- set full_sql -%}
-      {{ sql_with_dependencies }}
+      {{ cte_with_dependencies }}
       select * from ({{ render(node.raw_sql) }}) as tmp
     {%- endset -%}
 
@@ -43,21 +43,17 @@
 
 {% endmacro %}
 
-{% macro build_model_dependencies(node, include_sources) %}
+{% macro build_model_dependencies(node) %}
   {% set model_dependencies = [] %}
   {% for d in node.depends_on.nodes %}
     {% set node = dbt_unit_testing.node_by_id(d) %}
     {% if node.resource_type == 'model' %}
-      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node, include_sources) %}
+      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
       {% for cmd in child_model_dependencies %}
         {{ model_dependencies.append(cmd) }}
       {% endfor %}
-      {{ model_dependencies.append(d) }}
-    {% else %}
-      {% if include_sources %}
-        {{ model_dependencies.append(d) }}
-      {% endif %}
     {% endif %}
+    {{ model_dependencies.append(d) }}
   {% endfor %}
 
   {{ return (model_dependencies | unique | list) }}
