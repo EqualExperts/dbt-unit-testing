@@ -3,17 +3,14 @@ name: Dbt Unit Testing
 on:
   push:
     branches: [master]
-  pull_request_target:
-    types: [labeled]
+  pull_request_review:
+    types: [submitted]
+
   workflow_dispatch:
 
 jobs:
   integration-tests-snowflake:
     runs-on: ubuntu-latest
-    if: |
-      contains(github.event.pull_request.labels.*.name, 'safe to test') || 
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch'
     environment: test
     env:
       SNOWFLAKE_TEST_ACCOUNT: ${{ secrets.SNOWFLAKE_TEST_ACCOUNT }}
@@ -26,14 +23,10 @@ jobs:
       - uses: "actions/checkout@v2"
 
       - name: test snowflake
-        run: ./run_test.sh snowflake
+        run: ./run_test.sh snowflake 
 
   integration-tests-bigquery:
     runs-on: ubuntu-latest
-    if: |
-      contains(github.event.pull_request.labels.*.name, 'safe to test') || 
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch'
     environment: test
 
     steps:
@@ -53,10 +46,6 @@ jobs:
 
   integration-tests-postgres:
     runs-on: ubuntu-latest
-    if: |
-      contains(github.event.pull_request.labels.*.name, 'safe to test') || 
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch'
     environment: test
 
     services:
@@ -79,20 +68,3 @@ jobs:
 
       - name: test postgres
         run: ./run_test.sh postgres
-
-  remove-safe-to-test-label-after-test-run:
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    needs:
-      [
-        integration-tests-snowflake,
-        integration-tests-bigquery,
-        integration-tests-postgres,
-      ]
-    environment: test
-
-    steps:
-      - name: Manage PR Labels
-        uses: andymckay/labeler@1.0.4
-        with:
-          remove-labels: "safe to test"
