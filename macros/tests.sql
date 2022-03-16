@@ -56,6 +56,8 @@
 {% endmacro %}
 
 {% macro mock_input(model_name, source_name, input_values, options) %}
+  {% set unit_tests_config = var("unit_tests_config", {}) %}
+  {% set partial_mocking = options.get("input_format", unit_tests_config.get("partial_mocking", False)) %}
 
   {% if execute %}
     {% set input_values_sql = dbt_unit_testing.build_input_values_sql(input_values, options) %}
@@ -68,7 +70,12 @@
         {% set node = graph.nodes[ "seed." ~ project_name ~ "." ~ model_name] -%}
         {{ dbt_unit_testing.fake_seed_sql(node) }}
       {% else %}
-        {{ dbt_unit_testing.build_model_complete_sql(model_name, []) }}
+        {% if partial_mocking %}
+          {% set node = graph.nodes[ "model." ~ project_name ~ "." ~ model_name] -%}
+          {{ dbt_unit_testing.fake_model_sql(node) }}
+        {% else %}
+          {{ dbt_unit_testing.build_model_complete_sql(model_name, [], partial_mocking) }}
+        {% endif %}
       {% endif %}
     {%- endset -%}
 
@@ -97,9 +104,12 @@
 {% endmacro %}
 
 {% macro run_test(model_name, test_description, test_inputs, expectations, options) %}
+  {% set unit_tests_config = var("unit_tests_config", {}) %}
+  {% set partial_mocking = options.get("input_format", unit_tests_config.get("partial_mocking", False)) %}
+
   {% set hide_errors = options.get("hide_errors", false) %}
   {% set test_inputs_models = test_inputs.keys() | list %}
-  {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_name, test_inputs_models) %}
+  {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_name, test_inputs_models, partial_mocking) %}
   {% set columns = dbt_unit_testing.extract_columns_list(expectations) %}
   {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
 
@@ -110,7 +120,7 @@
       {%- if not loop.last -%}
         ,
       {%- endif -%}
-    {% endfor %}  
+    {% endfor %}
     select {{columns}} from ( {{ model_complete_sql }} ) as s
   {% endset %}
 
@@ -120,12 +130,12 @@
 
   {%- set test_query -%}
     with
-  
+
     expectations as ({{ expectations_query }}),
     actual as ({{ actual_query }}),
 
     extra_entries as (
-    select '+' as diff, {{columns}} from actual 
+    select '+' as diff, {{columns}} from actual
     {{ dbt_utils.except() }}
     select '+' as diff, {{columns}} from expectations),
 
@@ -133,7 +143,7 @@
     select '-' as diff, {{columns}} from expectations
     {{ dbt_utils.except() }}
     select '-' as diff, {{columns}} from actual)
-    
+
     select * from extra_entries
     UNION ALL
     select * from missing_entries

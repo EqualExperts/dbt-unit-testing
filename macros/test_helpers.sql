@@ -44,6 +44,31 @@
   {{ return (graph.sources["source." ~ project_name ~ "." ~ source_name ~ "." ~ model_name]) }}
 {% endmacro %}
 
+{% macro fake_model_sql(node) %}
+  {% set source_relation = dbt_utils.get_relations_by_pattern(
+      schema_pattern=node.schema,
+      table_pattern=node.name
+  ) %}
+  {% if source_relation | length > 0 %}
+    {%- set source_sql -%}
+      select * from {{ node.schema }}.{{ node.name }} where false
+    {%- endset -%}
+    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    from {{ node.schema }}.{{ node.name }}
+    where false
+  {% else %}
+    {% if node.columns %}
+      {% set columns = [] %}
+      {% for c in node.columns.values() %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
+      {% endfor %}
+      select {{ columns | join (",") }}
+    {% else %}
+      {{ exceptions.raise_compiler_error("Model " ~ node.name ~ " must exist in database or disable partial mocking") }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
 {% macro fake_source_sql(node) %}
   {% set source_relation = dbt_utils.get_relations_by_pattern(
       schema_pattern=node.schema,
@@ -93,6 +118,3 @@
     {% endif %}
   {% endif %}
 {% endmacro %}
-
-
-
