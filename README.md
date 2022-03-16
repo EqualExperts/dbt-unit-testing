@@ -270,3 +270,7 @@ packages:
 ```
 
 [read the docs](https://docs.getdbt.com/docs/package-management) for more information on installing packages.
+
+## License
+
+This project is [licensed](./LICENSE) under the [MIT License](https://mit-license.org/).
