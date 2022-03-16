@@ -1,0 +1,1 @@
+select 'b' as origin
