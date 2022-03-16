@@ -148,15 +148,20 @@
 
     {% set results = run_query(test_query) %}
     {% set results_length = results.rows | length %}
-    {% if expectations_row_count != actual_row_count and not hide_errors %}
+    {% set failed = results_length > 0 or expectations_row_count != actual_row_count %}
+
+    {% if failed and not hide_errors %}
       {%- do log('\x1b[31m' ~ 'MODEL: ' ~ model_name ~ '\x1b[0m', info=true) -%}
       {%- do log('\x1b[31m' ~ 'TEST:  ' ~ test_description ~ '\x1b[0m', info=true) -%}
-      {%- do log('\x1b[31m' ~ 'Number of Rows do not match! (Expected: ' ~ expectations_row_count ~ ', Actual: ' ~ actual_row_count ~ ')' ~ '\x1b[0m', info=true) -%}
+      {% if expectations_row_count != actual_row_count %}
+        {%- do log('\x1b[31m' ~ 'Number of Rows do not match! (Expected: ' ~ expectations_row_count ~ ', Actual: ' ~ actual_row_count ~ ')' ~ '\x1b[0m', info=true) -%}
+      {% endif %}
+      {% if results_length > 0 %}
+        {%- do log('\x1b[31m' ~ 'Rows mismatch:' ~ '\x1b[0m', info=true) -%}
+        {% do results.print_table(max_columns=None, max_column_width=30) %}
+      {% endif %}
     {% endif %}
-    {% if results_length > 0 and not hide_errors %}
-      {%- do log('\x1b[31m' ~ 'Rows mismatch:' ~ '\x1b[0m', info=true) -%}
-      {% do results.print_table(max_columns=None, max_column_width=30) %}
-    {% endif %}
-    select 1 from (select 1) as t where {{ results_length }} != 0 or {{ expectations_row_count != actual_row_count }}
+
+    select 1 from (select 1) as t where {{ failed }}
   {% endif %}
 {% endmacro %}
