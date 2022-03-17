@@ -80,3 +80,13 @@ jobs:
 
       - name: test postgres
         run: ./run_test.sh postgres
+
+  printJob:    
+    name: Print event
+    runs-on: ubuntu-latest
+    steps:
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        echo "$GITHUB_CONTEXT"
