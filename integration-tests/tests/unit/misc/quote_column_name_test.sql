@@ -16,4 +16,6 @@
             SELECT 1 as `end`
         {% endcall %}
     {% endcall %}
+{% else %}
+select 1 where 0!=0
 {% endif %}
