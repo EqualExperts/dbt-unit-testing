@@ -4,17 +4,12 @@ on:
   push:
     branches: [master]
   pull_request_target:
-    types: [opened, edited]
 
   workflow_dispatch:
 
 jobs:
   integration-tests-snowflake:
     runs-on: ubuntu-latest
-    if: |
-      github.event.review.state == 'approved' ||
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch'
     environment: test
     env:
       SNOWFLAKE_TEST_ACCOUNT: ${{ secrets.SNOWFLAKE_TEST_ACCOUNT }}
@@ -31,10 +26,6 @@ jobs:
 
   integration-tests-bigquery:
     runs-on: ubuntu-latest
-    if: |
-      github.event.review.state == 'approved' ||
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch'
     environment: test
 
     steps:
@@ -54,10 +45,6 @@ jobs:
 
   integration-tests-postgres:
     runs-on: ubuntu-latest
-    if: |
-      github.event.review.state == 'approved' ||
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch'
     environment: test
 
     services:
