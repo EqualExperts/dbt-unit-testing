@@ -7,7 +7,7 @@
     {% for k, v in test_info_json.items() %}
       {% set dummy = test_info_json.update({k: dbt_unit_testing.sql_decode(v)}) %}
     {% endfor %}
-    
+
     {% set expectations = test_info_json['__EXPECTATIONS__'] %}
     {% set dummy = test_info_json.pop('__EXPECTATIONS__') %}
 
@@ -64,7 +64,7 @@
         {% set node = graph.nodes[ "seed." ~ project_name ~ "." ~ model_name] -%}
         {{ dbt_unit_testing.fake_seed_sql(node) }}
       {% else %}
-        {{ dbt_unit_testing.build_model_complete_sql(model_name, [], include_sources = true) }}
+        {{ dbt_unit_testing.build_model_complete_sql(model_name, []) }}
       {% endif %}
     {%- endset -%}
 
@@ -103,13 +103,13 @@
     {% for m, m_sql in test_inputs.items() %}
       {{ m }} as ({{ dbt_unit_testing.sql_decode(m_sql) }}),
     {% endfor %}
-  
+
     expectations as (select {{columns}}, count(*) as count from ({{ expectations }}) as s group by {{columns}}),
 
     actual as (select {{columns}}, count(*) as count from ( {{ model_complete_sql }} ) as s group by {{columns}}),
 
     extra_entries as (
-    select '+' as diff, count, {{columns}} from actual 
+    select '+' as diff, count, {{columns}} from actual
     {{ dbt_utils.except() }}
     select '+' as diff, count, {{columns}} from expectations),
 
@@ -117,9 +117,9 @@
     select '-' as diff, count, {{columns}} from expectations
     {{ dbt_utils.except() }}
     select '-' as diff, count, {{columns}} from actual)
-    
+
     select * from extra_entries
-    UNION ALL 
+    UNION ALL
     select * from missing_entries
   {% endset %}
 
@@ -131,6 +131,6 @@
       {%- do log('\x1b[31m' ~ 'TEST:  ' ~ test_description ~ '\x1b[0m', info=true) -%}
       {% do results.print_table(max_columns=None, max_column_width=30) %}
     {% endif %}
-    select 1 from (select 1) as t where {{ results_length }} != 0    
+    select 1 from (select 1) as t where {{ results_length }} != 0
   {% endif %}
 {% endmacro %}
