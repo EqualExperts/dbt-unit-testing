@@ -1,6 +1,6 @@
 # DBT Unit Testing
 
-[![Dbt Unit Testing](https://github.com/EqualExperts/dbt-unit-test-demo/actions/workflows/integration_tests.yml/badge.svg)](https://github.com/EqualExperts/dbt-unit-test-demo/actions/workflows/integration_tests.yml)
+[![Dbt Unit Testing](https://github.com/EqualExperts/dbt-unit-testing/actions/workflows/main.yml/badge.svg)](https://github.com/EqualExperts/dbt-unit-testing/actions/workflows/main.yml)
 
 This [dbt](https://github.com/dbt-labs/dbt) package contains macros to support unit testing that can be (re)used across dbt projects.
 
