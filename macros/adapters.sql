@@ -11,11 +11,7 @@
 {%- endmacro %}
 
 {% macro bigquery__quote_column_name(column_name) %}
-    {% if column_name.startswith('`') %}
-      {{ return(column_name) }}
-    {% else %}
-      {{ return('`' ~ column_name ~ '`') }}
-    {% endif %}
+    {{ return(column_name) }}
 {% endmacro %}
 
 {% macro snowflake__quote_column_name(column_name) %}
