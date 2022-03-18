@@ -1,4 +1,4 @@
-# DBT Unit Testing
+# DBT Unit TTesting
 
 [![Dbt Unit Testing](https://github.com/EqualExperts/dbt-unit-test-demo/actions/workflows/integration_tests.yml/badge.svg)](https://github.com/EqualExperts/dbt-unit-test-demo/actions/workflows/integration_tests.yml)
 
