@@ -5,3 +5,7 @@ seeds:
     config:
       column_types:
         value: numeric
+  - name: seed_device_site
+    config:
+      column_types:
+        value: string

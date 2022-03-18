@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: dbt_unit_testing
+    tables:
+      - name: package
+        columns:
+          - name: device_serial_number
+          - name: timestamp
+          - name: energy
+      - name: cyc_a
+        columns:
+          - name: device_serial_number
+          - name: timestamp
+          - name: cyc_sig
+      - name: cyc_b
+        columns:
+          - name: device_serial_number
+          - name: timestamp
+          - name: cyc_sig
+      - name: crd
+        columns:
+          - name: device_serial_number
+          - name: timestamp
+          - name: sig
+      - name: site
+        columns:
+          - name: device_serial_number
+          - name: timestamp
+          - name: sig
