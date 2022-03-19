@@ -1,6 +1,10 @@
 {% macro test(model_name, test_description) %}
+    {{ dbt_unit_testing._test(model_name, test_description, caller())}}
+{% endmacro %}
+
+{% macro _test(model_name, test_description, test_info, options={}) %}
     {% set test_description = test_description | default('(no description)') %}
-    {% set test_info = caller() | trim %}
+    {% set test_info = test_info | trim %}
     {% set test_info_last_comma_removed = test_info[:-1] %}
     {% set test_info_json = fromjson('{' ~ test_info_last_comma_removed ~ '}') %}
 
@@ -11,7 +15,7 @@
     {% set expectations = test_info_json['__EXPECTATIONS__'] %}
     {% set dummy = test_info_json.pop('__EXPECTATIONS__') %}
 
-    {{ dbt_unit_testing.run_test(model_name, test_description, test_info_json, expectations)}}
+    {{ dbt_unit_testing.run_test(model_name, test_description, test_info_json, expectations, options)}}
 {% endmacro %}
 
 {% macro ref(model_name) %}
@@ -92,45 +96,71 @@
     {{ return (input_as_json) }}
 {% endmacro %}
 
-{% macro run_test(model_name, test_description, test_inputs, expectations) %}
+{% macro run_test(model_name, test_description, test_inputs, expectations, options) %}
+  {% set hide_errors = options.get("hide_errors", false) %}
   {% set test_inputs_models = test_inputs.keys() | list %}
   {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_name, test_inputs_models) %}
   {% set columns = dbt_unit_testing.extract_columns_list(expectations) %}
   {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
 
-  {%- set sql_for_running_test -%}
+  {%- set actual_query -%}
     with
     {% for m, m_sql in test_inputs.items() %}
-      {{ m }} as ({{ dbt_unit_testing.sql_decode(m_sql) }}),
-    {% endfor %}
+      {{ m }} as ({{ dbt_unit_testing.sql_decode(m_sql) }})
+      {%- if not loop.last -%}
+        ,
+      {%- endif -%}
+    {% endfor %}  
+    select {{columns}} from ( {{ model_complete_sql }} ) as s
+  {% endset %}
 
-    expectations as (select {{columns}}, count(*) as count from ({{ expectations }}) as s group by {{columns}}),
+  {%- set expectations_query -%}
+    select {{columns}} from ({{ expectations }}) as s
+  {% endset %}
 
-    actual as (select {{columns}}, count(*) as count from ( {{ model_complete_sql }} ) as s group by {{columns}}),
+  {%- set test_query -%}
+    with
+  
+    expectations as ({{ expectations_query }}),
+    actual as ({{ actual_query }}),
 
     extra_entries as (
-    select '+' as diff, count, {{columns}} from actual
+    select '+' as diff, {{columns}} from actual 
     {{ dbt_utils.except() }}
-    select '+' as diff, count, {{columns}} from expectations),
+    select '+' as diff, {{columns}} from expectations),
 
     missing_entries as (
-    select '-' as diff, count, {{columns}} from expectations
+    select '-' as diff, {{columns}} from expectations
     {{ dbt_utils.except() }}
-    select '-' as diff, count, {{columns}} from actual)
-
+    select '-' as diff, {{columns}} from actual)
+    
     select * from extra_entries
     UNION ALL
     select * from missing_entries
+
   {% endset %}
 
   {% if execute %}
-    {% set results = run_query(sql_for_running_test) %}
-    {% set results_length = results.rows|length %}
-    {% if results_length > 0 %}
+    {% set r1 = run_query("select count(1) from (" ~ expectations_query ~ ") as t") %}
+    {% set expectations_row_count = r1.columns[0].values() | first %}
+    {% set r2 = run_query("select count(1) from (" ~ actual_query ~ ") as t") %}
+    {% set actual_row_count = r2.columns[0].values() | first %}
+
+    {% set results = run_query(test_query) %}
+    {% set results_length = results.rows | length %}
+    {% set failed = results_length > 0 or expectations_row_count != actual_row_count %}
+
+    {% if failed and not hide_errors %}
       {%- do log('\x1b[31m' ~ 'MODEL: ' ~ model_name ~ '\x1b[0m', info=true) -%}
       {%- do log('\x1b[31m' ~ 'TEST:  ' ~ test_description ~ '\x1b[0m', info=true) -%}
-      {% do results.print_table(max_columns=None, max_column_width=30) %}
+      {% if expectations_row_count != actual_row_count %}
+        {%- do log('\x1b[31m' ~ 'Number of Rows do not match! (Expected: ' ~ expectations_row_count ~ ', Actual: ' ~ actual_row_count ~ ')' ~ '\x1b[0m', info=true) -%}
+      {% endif %}
+      {% if results_length > 0 %}
+        {%- do log('\x1b[31m' ~ 'Rows mismatch:' ~ '\x1b[0m', info=true) -%}
+        {% do results.print_table(max_columns=None, max_column_width=30) %}
+      {% endif %}
     {% endif %}
-    select 1 from (select 1) as t where {{ results_length }} != 0
+    select 1 from (select 1) as t where {{ failed }}
   {% endif %}
 {% endmacro %}
