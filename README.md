@@ -66,7 +66,7 @@ The goal is to write the test, write the model, and then run the test (with “d
   {% call dbt_unit_testing.mock_ref ('[Model to Mock]') %}
      select ...
   {% endcall %}
- 
+
   {% call dbt_unit_testing.mock_source('[Ref to Mock]') %}
     select ...
   {% endcall %}
@@ -176,8 +176,8 @@ To be able to mock the models and sources in tests, in your dbt models you shoul
 select day,
 country_name,
 cases
-from {{ dbt_unit_testing.ref('covid19_cases_per_day') }} 
-     JOIN {{ dbt_unit_testing.source('dbt_unit_testing','covid19_country_stg') }} 
+from {{ dbt_unit_testing.ref('covid19_cases_per_day') }}
+     JOIN {{ dbt_unit_testing.source('dbt_unit_testing','covid19_country_stg') }}
      USING (country_id)
 
 ```
@@ -223,6 +223,19 @@ sources:
             data_type: integer
           ...
 ```
+
+### Partial mocking
+
+In some environments (particularly BigQuery), you may find that you need to reduce query complexity.  This can be done by enabling "partial mocking" in the config section.  With partial mocking enabled, dbt-unit-testing will only mock out the immediate parents of a model instead of all of the DAG model parents.  This mode requires that the dbt models have already been built in your data warehouse.
+
+To enable partial mocking, in the vars section of your `dbt_project.yaml` set `partial_mocking` to `True`:
+
+```yaml
+vars:
+  unit_tests_config:
+    partial_mocking: True
+```
+
 
 ### Convenience features
 
