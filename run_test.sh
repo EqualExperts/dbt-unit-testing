@@ -18,4 +18,4 @@ if [[ ! -e ~/.dbt/profiles.yml ]]; then
 fi
 
 dbt deps --target $1
-dbt test --target $1 --models tag:unit-test
+dbt test --target $1 --models tag:unit-test,tag:$1
