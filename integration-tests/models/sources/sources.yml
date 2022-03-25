@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: dbt_unit_testing
+    tables:
+      - name: sample_source
+        columns:
+          - name: source_a
+            data_type: integer
+          - name: source_b
+            data_type: varchar
