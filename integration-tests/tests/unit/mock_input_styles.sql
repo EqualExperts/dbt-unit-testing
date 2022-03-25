@@ -16,7 +16,7 @@
   {% endcall %}
 {% endcall %}
 
-UNION
+UNION ALL
  
 {% call dbt_unit_testing.test('model_b_references_a', 'csv input with type cast on columns') %}
   {% call dbt_unit_testing.mock_ref ('model_a',{"input_format": "csv"}) %}
@@ -30,7 +30,7 @@ UNION
   {% endcall %}
 {% endcall %}
 
-UNION
+UNION ALL
 
 {% call dbt_unit_testing.test('model_b_references_a', 'csv input with different separator') %}
   {% call dbt_unit_testing.mock_ref ('model_a',{"input_format": "csv","column_separator": "|"}) %}
