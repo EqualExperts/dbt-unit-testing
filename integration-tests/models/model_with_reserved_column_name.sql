@@ -1,0 +1,1 @@
+select *, 1 as "END" from {{ dbt_unit_testing.ref('model_a') }} where a >=1
