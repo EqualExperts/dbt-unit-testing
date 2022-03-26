@@ -8,3 +8,4 @@ sources:
           - name: source_a
             data_type: integer
           - name: source_b
+      - name: sample_source_without_columns_declared
