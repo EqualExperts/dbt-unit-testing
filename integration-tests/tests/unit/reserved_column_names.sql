@@ -9,7 +9,7 @@
     select 1 as a, 'b' as b
   {% endcall %}
   {% call dbt_unit_testing.expect() %}
-    select 1 as a, 'b' as b, 1 as "end"
+    select 1 as a, 'b' as b, 1 as "END"
   {% endcall %}
 {% endcall %}
  
