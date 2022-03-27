@@ -20,8 +20,14 @@
   {{ return (s.replace('####_quote_####', '"').replace('####_cr_####', '\n').replace('####_tab_####', '\t')) -}}
 {% endmacro %}
 
-{% macro debug(value) %}
-  {% do log (value, info=true) %}
+{% macro log_info(s) %}
+  {% do log (s, info=true) %}
+{% endmacro %}
+
+{% macro debug(s) %}
+  {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
+    {{ dbt_unit_testing.log_info (s) }}
+  {% endif %}
 {% endmacro %}
 
 {% macro map(items, f) %}
@@ -33,88 +39,45 @@
 {% endmacro %}
 
 {% macro node_by_id (node_id) %}]
-  {{ return (graph.nodes[node_id] if node_id.startswith('model') or node_id.startswith('seed') else graph.sources[node_id]) }}
+  {% if execute %}
+    {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
+  {% endif %}
 {% endmacro %}
 
 {% macro model_node (model_name) %}
-  {{ return (graph.nodes["model." ~ project_name ~ "." ~ model_name]) }}
+  {% if execute %}
+    {% set node = graph.nodes["model." ~ project_name ~ "." ~ model_name] %}
+    {% if not node %}
+      {% set node = graph.nodes["seed." ~ project_name ~ "." ~ model_name] %}
+    {% endif %}
+    {{ return (node) }}
+  {% endif %}
 {% endmacro %}
 
 {% macro source_node (source_name, model_name) %}
-  {{ return (graph.sources["source." ~ project_name ~ "." ~ source_name ~ "." ~ model_name]) }}
-{% endmacro %}
-
-{% macro fake_model_sql(node) %}
-  {% set source_relation = dbt_utils.get_relations_by_pattern(
-      schema_pattern=node.schema,
-      table_pattern=node.name
-  ) %}
-  {% if source_relation | length > 0 %}
-    {%- set source_sql -%}
-      select * from {{ node.schema }}.{{ node.name }} where false
-    {%- endset -%}
-    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
-    from {{ node.schema }}.{{ node.name }}
-    where false
-  {% else %}
-    {% if node.columns %}
-      {% set columns = [] %}
-      {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
-      {% endfor %}
-      select {{ columns | join (",") }}
-    {% else %}
-      {{ exceptions.raise_compiler_error("Model " ~ node.name ~ " must exist in database or disable partial mocking") }}
-    {% endif %}
+  {% if execute %}
+    {{ return (graph.sources["source." ~ project_name ~ "." ~ source_name ~ "." ~ model_name]) }}
   {% endif %}
 {% endmacro %}
 
-{% macro fake_source_sql(node) %}
-  {% set source_relation = dbt_utils.get_relations_by_pattern(
-      schema_pattern=node.schema,
-      table_pattern=node.name
-  ) %}
-  {% if source_relation | length > 0 %}
-    {%- set source_sql -%}
-      select * from {{ node.schema }}.{{ node.name }} where false
-    {%- endset -%}
-    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
-    from {{ node.schema }}.{{ node.name }}
-    where false
+{% macro graph_node (source_name, model_name) %}
+  {% if source_name %}
+    {{ return (dbt_unit_testing.source_node(source_name, model_name)) }}
   {% else %}
-    {% if node.columns %}
-      {% set columns = [] %}
-      {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
-      {% endfor %}
-      select {{ columns | join (",") }}
-    {% else %}
-      {{ exceptions.raise_compiler_error("Source " ~ node.name ~ " columns must be declared in sources.yml, or it must exist in database") }}
-    {% endif %}
-  {% endif %}
+    {{ return (dbt_unit_testing.model_node(model_name)) }}
+  {% endif  %}
 {% endmacro %}
 
-{% macro fake_seed_sql(node) %}
-  {% set source_relation = dbt_utils.get_relations_by_pattern(
-      schema_pattern=node.schema,
-      table_pattern=node.name
-  ) %}
-  {% if source_relation | length > 0 %}
-    {%- set source_sql -%}
-      select * from {{ node.schema }}.{{ node.name }} where false
-    {%- endset -%}
-    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
-    from {{ node.schema }}.{{ node.name }}
-    where false
-  {% else %}
-    {% if node.config and node.config.column_types %}
-      {% set columns = [] %}
-      {% for c in node.config.column_types.keys() %}
-        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ c) %}
-      {% endfor %}
-      select {{ columns | join (",") }}
-    {% else %}
-      {{ exceptions.raise_compiler_error("Seed " ~ node.name ~ " columns must be declared in properties.yml, or it must exist in database") }}
-    {% endif %}
-  {% endif %}
+{% macro get_config(config_name, default_value) %}
+  {% set unit_tests_config = var("unit_tests_config", {}) %}
+  {% set unit_tests_config = {} if unit_tests_config is none else unit_tests_config %}
+  {{ return (unit_tests_config.get(config_name, default_value))}}
+{% endmacro %}
+
+{% macro get_mocking_strategy() %}
+  {% set mocking_strategy = dbt_unit_testing.get_config("mocking_strategy", 'FULL') %}
+  {% set full = mocking_strategy | upper == 'FULL' %}
+  {% set simplified = mocking_strategy | upper == 'SIMPLIFIED' %}
+  {% set database = mocking_strategy | upper == 'DATABASE' %}
+  {{ return ({"full": full, "simplified": simplified, "database": database}) }}
 {% endmacro %}

@@ -1,65 +1,146 @@
-{% macro build_model_complete_sql(model_name, test_inputs, partial_mocking) %}
+{% macro build_model_complete_sql(model_node, mocked_models, options) %}
   {% if execute %}
-    {% set node = dbt_unit_testing.model_node(model_name) %}
-    {% set build_parents = not partial_mocking %}
-    {% set model_dependencies = dbt_unit_testing.build_model_dependencies(node, build_parents=build_parents) %}
-    {% set model_dependencies_not_in_mocked_inputs = [] %}
-    {%- for d in model_dependencies -%}
-      {% set node = dbt_unit_testing.node_by_id(d) %}
-      {%- if node.name not in test_inputs -%}
-        {{ model_dependencies_not_in_mocked_inputs.append(d) }}
+    {% set include_all_dependencies = options.get("include_all_dependencies", false) %}
+
+    {% set mocked_models_names = mocked_models.keys() | list %}
+    {% set cte_dependencies = [] %}
+    {% set dependencies_to_exclude = none if include_all_dependencies else mocked_models_names %}
+    {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, dependencies_to_exclude) %}
+    {% for node_id in model_dependencies %}
+      {% set node = dbt_unit_testing.node_by_id(node_id) %}
+      {% if node.name in mocked_models_names %}
+        {% set sql = mocked_models[node.name] %}
+      {% else %}
+        {% set sql = dbt_unit_testing.build_node_sql(node, options) %}
+      {% endif %}
+      {% set cte = node.name ~ " as (" ~ sql ~ ")" %}
+      {% set cte_dependencies = cte_dependencies.append(cte) %}
+    {%- endfor -%}
+
+    {%- set final_sql -%}
+      {% if cte_dependencies %}
+        with
+        {{ cte_dependencies | join(",\n") }}
       {%- endif -%}
-    {%- endfor %}
-
-    {%- set cte_with_dependencies -%}
-      {%- for d in model_dependencies_not_in_mocked_inputs -%}
-        {%- if loop.first -%}
-          {{ 'with ' }}
-        {%- endif -%}
-        {% set node = dbt_unit_testing.node_by_id(d) %}
-          {{ node.name }} as (
-        {%- if node.resource_type == 'model' -%}
-          {%- if partial_mocking -%}
-            {{ dbt_unit_testing.fake_model_sql(node) }}
-          {%- else -%}
-            {{ render(node.raw_sql) }}
-          {%- endif -%}
-        {%- elif node.resource_type == 'seed' -%}
-            {{ dbt_unit_testing.fake_seed_sql(node) }}
-        {%- else -%}
-            {{ dbt_unit_testing.fake_source_sql(node) }}
-        {%- endif -%}
-          )
-        {%- if not loop.last -%}
-          ,
-        {%- endif -%}
-      {%- endfor %}
+      select * from ({{ render(model_node.raw_sql) }}) as t
     {%- endset -%}
 
-    {%- set full_sql -%}
-      {{ cte_with_dependencies }}
-      select * from ({{ render(node.raw_sql) }}) as tmp
-    {%- endset -%}
-
-    {{ return (full_sql) }}
+    {{ return (final_sql) }}
 
   {%- endif -%}
-
 {% endmacro %}
 
-{% macro build_model_dependencies(node, build_parents=True) %}
+{% macro build_model_dependencies(node, models_names_to_exclude) %}
   {% set model_dependencies = [] %}
-  {% for d in node.depends_on.nodes %}
-    {% set node = dbt_unit_testing.node_by_id(d) %}
-    {% if node.resource_type == 'model' and build_parents %}
-      {% set parent_model_dependencies = dbt_unit_testing.build_model_dependencies(node, build_parents=True) %}
-      {% for cmd in parent_model_dependencies %}
-        {{ model_dependencies.append(cmd) }}
+  {% for node_id in node.depends_on.nodes %}
+    {% set node = dbt_unit_testing.node_by_id(node_id) %}
+    {% if node.resource_type == 'model' and (models_names_to_exclude is none or node.name not in models_names_to_exclude) %}
+      {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
+      {% for dependency_node_id in child_model_dependencies %}
+        {{ model_dependencies.append(dependency_node_id) }}
       {% endfor %}
     {% endif %}
-    {{ model_dependencies.append(d) }}
+    {{ model_dependencies.append(node_id) }}
   {% endfor %}
 
   {{ return (model_dependencies | unique | list) }}
-
 {% endmacro %}
+
+{% macro build_node_sql (node, options) %}
+  {% if execute %}
+    {% set fetch_mode = options.get("fetch_mode") %}
+    {% if node.resource_type == 'model' %}
+      {% if fetch_mode | upper == 'FULL' %}
+        {{ dbt_unit_testing.build_model_complete_sql(node, {}, {"fetch_mode": 'RAW'}) }}
+      {% elif fetch_mode | upper == 'RAW' %}
+        {{ render(node.raw_sql) }}
+      {% elif fetch_mode | upper == 'DATABASE' %}
+        {{ dbt_unit_testing.fake_model_sql(node) }}
+      {% else %}
+        {{ exceptions.raise_compiler_error("Invalid fetch_mode: " ~ fetch_mode) }}
+     {% endif %}
+    {% elif node.resource_type == 'seed'  %}
+      {{ dbt_unit_testing.fake_seed_sql(node) }}
+    {% else %}
+      {{ dbt_unit_testing.fake_source_sql(node) }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+{% macro fake_model_sql(node) %}
+  {% set source_relation = dbt_utils.get_relations_by_pattern(
+      schema_pattern=node.schema,
+      table_pattern=node.name
+  ) %}
+  {% if source_relation | length > 0 %}
+    {%- set source_sql -%}
+      select * from {{ node.schema }}.{{ node.name }} where false
+    {%- endset -%}
+    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    from {{ node.schema }}.{{ node.name }}
+    where false
+  {% else %}
+    {% if node.columns %}
+      {% set columns = [] %}
+      {% for c in node.columns.values() %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
+      {% endfor %}
+      select {{ columns | join (",") }}
+    {% else %}
+      {{ exceptions.raise_compiler_error("Model " ~ node.name ~ " columns must be declared in schema.yml, or it must exist in database") }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+{% macro fake_source_sql(node) %}
+  {% set source_relation = dbt_utils.get_relations_by_pattern(
+      schema_pattern=node.schema,
+      table_pattern=node.name
+  ) %}
+  {% if source_relation | length > 0 %}
+    {%- set source_sql -%}
+      select * from {{ node.schema }}.{{ node.name }} where false
+    {%- endset -%}
+    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    from {{ node.schema }}.{{ node.name }}
+    where false
+  {% else %}
+    {% if node.columns %}
+      {% set columns = [] %}
+      {% for c in node.columns.values() %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
+      {% endfor %}
+      select {{ columns | join (",") }}
+    {% else %}
+      {{ exceptions.raise_compiler_error("Source " ~ node.name ~ " columns must be declared in sources.yml, or it must exist in database") }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+{% macro fake_seed_sql(node) %}
+  {% set source_relation = dbt_utils.get_relations_by_pattern(
+      schema_pattern=node.schema,
+      table_pattern=node.name
+  ) %}
+  {% if source_relation | length > 0 %}
+    {%- set source_sql -%}
+      select * from {{ node.schema }}.{{ node.name }} where false
+    {%- endset -%}
+    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    from {{ node.schema }}.{{ node.name }}
+    where false
+  {% else %}
+    {% if node.config and node.config.column_types %}
+      {% set columns = [] %}
+      {% for c in node.config.column_types.keys() %}
+        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ c) %}
+      {% endfor %}
+      select {{ columns | join (",") }}
+    {% else %}
+      {{ exceptions.raise_compiler_error("Seed " ~ node.name ~ " columns must be declared in properties.yml, or it must exist in database") }}
+    {% endif %}
+  {% endif %}
+{% endmacro %}
+
+
+

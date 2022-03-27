@@ -139,7 +139,7 @@ All the unit testing related macros (**`mock_ref`**, **`mock_source`**, **`expec
 
 (the last three options are used only for `csv` format)
 
-These defaults can be also be changed project wise, in the vars section of your `dbt_project.yaml`:
+These defaults can be also be changed project wise, in the vars section of your `dbt_project.yml`:
 
 ```yaml
 vars:
@@ -224,18 +224,27 @@ sources:
           ...
 ```
 
-### Partial mocking
+### Mocking strategy
 
-In some environments (particularly BigQuery), you may find that you need to reduce query complexity.  This can be done by enabling "partial mocking" in the config section.  With partial mocking enabled, dbt-unit-testing will only mock out the immediate parents of a model instead of all of the DAG model parents.  This mode requires that the dbt models have already been built in your data warehouse.
+In some environments (particularly BigQuery), you may find that you need to reduce query complexity. There are three levels of complexity that you can specify when running tests, in decreasing order of complexity:
 
-To enable partial mocking, in the vars section of your `dbt_project.yaml` set `partial_mocking` to `True`:
+- *Full*
+- *Simplified*
+- *Database*
+
+The *Full* strategy provides the better developer experience by mocking all the models with the SQL that's on each model's file. There is no need to materialize the models in the database to run the tests. It can also infer the types of all the columns that are not used in a mocked model, preventing some type mismatches when running the tests.
+
+The *Simplified* strategy builds less complex test queries but it doesn't infer the columns types as the `Full` strategy does. This means that sometimes you need to declare the type of a column in the mocking sql, even if you don't need that column in the test.
+
+The *Database* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database. The only exception is the model being tested, this one will always use the SQL from its file.
+
+You can specify the mocking strategy in the dbt_project.yml file, like this:
 
 ```yaml
 vars:
   unit_tests_config:
-    partial_mocking: True
+    mocking_stategy: Full
 ```
-
 
 ### Convenience features
 
@@ -259,6 +268,10 @@ TEST:  Test country name join
 ```
 
 The first line was not on the model but the second line was.
+
+## Known Limitations
+
+- It's not possible to have a *model* with the same name as a *source* or a *seed*.
 
 ## Compatibility
 
