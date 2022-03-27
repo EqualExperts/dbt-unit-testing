@@ -1,7 +1,7 @@
 version: 2
 
 seeds:
-  - name: seed_test
+  - name: seed
     config:
       column_types:
         value: numeric
