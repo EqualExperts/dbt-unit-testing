@@ -57,7 +57,7 @@
 
 {% macro mock_input(model_name, source_name, input_values, options) %}
   {% set unit_tests_config = var("unit_tests_config", {}) %}
-  {% set partial_mocking = options.get("input_format", unit_tests_config.get("partial_mocking", False)) %}
+  {% set partial_mocking = options.get("partial_mocking", unit_tests_config.get("partial_mocking", False)) %}
 
   {% if execute %}
     {% set input_values_sql = dbt_unit_testing.build_input_values_sql(input_values, options) %}
