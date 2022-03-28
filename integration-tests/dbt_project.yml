@@ -18,3 +18,12 @@ clean-targets: # directories to be removed by `dbt clean`
   - "target"
   - "dbt_modules"
   - "dbt_packages"
+
+vars:
+  unit_tests_config:
+    debug: false
+    mocking_strategy: full
+    input_format: sql
+    column_separator: ","
+    line_separator: "\n"
+    type_separator: "::"

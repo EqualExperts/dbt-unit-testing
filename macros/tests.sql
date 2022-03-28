@@ -19,24 +19,23 @@
 {% endmacro %}
 
 {% macro ref(model_name) %}
-{%- if 'unit-test' in config.get('tags') -%}
-    {{model_name}}
-{%- else -%}
-    {{ return (builtins.ref(model_name)) }}
-{%- endif -%}
+  {%- if 'unit-test' in config.get('tags') -%}
+      {{model_name}}
+  {%- else -%}
+      {{ return (builtins.ref(model_name)) }}
+  {%- endif -%}
 {% endmacro %}
 
 {% macro source(source, model_name) %}
-{%- if 'unit-test' in config.get('tags') -%}
-    {{model_name}}
-{%- else -%}
-    {{ return (builtins.source(source, model_name)) }}
-{%- endif -%}
+  {%- if 'unit-test' in config.get('tags') -%}
+      {{model_name}}
+  {%- else -%}
+      {{ return (builtins.source(source, model_name)) }}
+  {%- endif -%}
 {% endmacro %}
 
 {% macro build_input_values_sql(input_values, options) %}
-    {% set unit_tests_config = var("unit_tests_config", {}) %}
-    {% set input_format = options.get("input_format", unit_tests_config.get("input_format", "sql")) %}
+    {% set input_format = options.get("input_format", dbt_unit_testing.get_config("input_format", "sql")) %}
 
     {% set input_values_sql = input_values %}
 
@@ -56,43 +55,39 @@
 {% endmacro %}
 
 {% macro mock_input(model_name, source_name, input_values, options) %}
-  {% set unit_tests_config = var("unit_tests_config", {}) %}
-  {% set partial_mocking = options.get("partial_mocking", unit_tests_config.get("partial_mocking", False)) %}
-
   {% if execute %}
+    {% set mocking_strategy = dbt_unit_testing.get_mocking_strategy() %}
+
     {% set input_values_sql = dbt_unit_testing.build_input_values_sql(input_values, options) %}
+    {% set model_node = dbt_unit_testing.graph_node(source_name, model_name) %}
 
-    {%- set model_sql -%}
-      {%if source_name %}
-        {% set node = dbt_unit_testing.source_node(source_name, model_name) %}
-        {{ dbt_unit_testing.fake_source_sql(node) }}
-      {% elif  "seed." ~ project_name ~ "." ~ model_name in graph.nodes  %}
-        {% set node = graph.nodes[ "seed." ~ project_name ~ "." ~ model_name] -%}
-        {{ dbt_unit_testing.fake_seed_sql(node) }}
-      {% else %}
-        {% if partial_mocking %}
-          {% set node = graph.nodes[ "model." ~ project_name ~ "." ~ model_name] -%}
-          {{ dbt_unit_testing.fake_model_sql(node) }}
-        {% else %}
-          {{ dbt_unit_testing.build_model_complete_sql(model_name, [], partial_mocking) }}
-        {% endif %}
-      {% endif %}
-    {%- endset -%}
+    {% set options = {"fetch_mode": 'DATABASE' if mocking_strategy.database else 'FULL' } %}
+    {% set full_node_sql = dbt_unit_testing.build_node_sql(model_node, options) %}
 
-    {% set model_columns = dbt_unit_testing.extract_columns_list(model_sql) %}
+    {% set model_columns = dbt_unit_testing.extract_columns_list(full_node_sql) %}
     {% set input_columns = dbt_unit_testing.extract_columns_list(input_values_sql) %}
     {% set extra_columns = dbt_unit_testing.extract_columns_difference(model_columns, input_columns) %}
 
     {%- set input_sql_with_all_columns -%}
       select * from ({{input_values_sql}}) as {{model_name}}_tmp_1
+
       {% if extra_columns %}
-      left join (select {{ extra_columns | join (",")}}
-                 from (select * from ({{ model_sql }}) as {{model_name}}_tmp_2) as {{model_name}}_tmp_3
-      ) as {{model_name}}_tmp_4 on false
+        {% if mocking_strategy.simplified %}
+          {% set null_extra_columns = [] %}
+          {% for c in extra_columns %}
+            {% set null_extra_columns = null_extra_columns.append("null as " ~ c) %}
+          {% endfor %}
+          left join (select {{ null_extra_columns | join (",")}}) as {{model_name}}_tmp_3 on false
+        {% else %}
+          {% set simple_node_sql = dbt_unit_testing.build_node_sql(model_node, {"fetch_mode": 'RAW'}) %}
+            left join (select {{ extra_columns | join (",")}}
+                      from ({{ simple_node_sql }}) as {{model_name}}_tmp_2) as {{model_name}}_tmp_3 on false
+        {% endif %}
       {% endif %}
+
     {%- endset -%}
 
-    {%- set input_as_json = '"' ~ model_name  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' -%}
+    {% set input_as_json = '"' ~ model_name  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' %}
     {{ return (input_as_json) }}
   {% endif %}
 {% endmacro %}
@@ -103,24 +98,19 @@
     {{ return (input_as_json) }}
 {% endmacro %}
 
-{% macro run_test(model_name, test_description, test_inputs, expectations, options) %}
-  {% set unit_tests_config = var("unit_tests_config", {}) %}
-  {% set partial_mocking = options.get("input_format", unit_tests_config.get("partial_mocking", False)) %}
-
+{% macro run_test(model_name, test_description, mocked_models, expectations, options) %}
   {% set hide_errors = options.get("hide_errors", false) %}
-  {% set test_inputs_models = test_inputs.keys() | list %}
-  {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_name, test_inputs_models, partial_mocking) %}
+  {% set mocking_strategy = dbt_unit_testing.get_mocking_strategy() %}
+
+  {% set model_node = dbt_unit_testing.model_node(model_name) %}
+  {% set options = { "fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW',
+                     "include_all_dependencies": not mocking_strategy.simplified } %}
+
+  {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, mocked_models, options) %}
   {% set columns = dbt_unit_testing.extract_columns_list(expectations) %}
   {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
 
   {%- set actual_query -%}
-    with
-    {% for m, m_sql in test_inputs.items() %}
-      {{ m }} as ({{ dbt_unit_testing.sql_decode(m_sql) }})
-      {%- if not loop.last -%}
-        ,
-      {%- endif -%}
-    {% endfor %}
     select {{columns}} from ( {{ model_complete_sql }} ) as s
   {% endset %}
 
@@ -130,12 +120,12 @@
 
   {%- set test_query -%}
     with
-
+  
     expectations as ({{ expectations_query }}),
     actual as ({{ actual_query }}),
 
     extra_entries as (
-    select '+' as diff, {{columns}} from actual
+    select '+' as diff, {{columns}} from actual 
     {{ dbt_utils.except() }}
     select '+' as diff, {{columns}} from expectations),
 
@@ -143,7 +133,7 @@
     select '-' as diff, {{columns}} from expectations
     {{ dbt_utils.except() }}
     select '-' as diff, {{columns}} from actual)
-
+    
     select * from extra_entries
     UNION ALL
     select * from missing_entries
@@ -151,6 +141,12 @@
   {% endset %}
 
   {% if execute %}
+    {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
+      {{ dbt_unit_testing.debug("------------------------------------") }}
+      {{ dbt_unit_testing.debug("MODEL: " ~ model_name) }}
+      {{ dbt_unit_testing.debug(test_query) }}
+    {% endif %}
+
     {% set r1 = run_query("select count(1) from (" ~ expectations_query ~ ") as t") %}
     {% set expectations_row_count = r1.columns[0].values() | first %}
     {% set r2 = run_query("select count(1) from (" ~ actual_query ~ ") as t") %}
