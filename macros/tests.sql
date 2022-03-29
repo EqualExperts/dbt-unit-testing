@@ -1,5 +1,5 @@
-{% macro test(model_name, test_description) %}
-    {{ dbt_unit_testing._test(model_name, test_description, caller())}}
+{% macro test(model_name, test_description, options={}) %}
+    {{ dbt_unit_testing._test(model_name, test_description, caller(), options)}}
 {% endmacro %}
 
 {% macro _test(model_name, test_description, test_info, options={}) %}
@@ -56,7 +56,7 @@
 
 {% macro mock_input(model_name, source_name, input_values, options) %}
   {% if execute %}
-    {% set mocking_strategy = dbt_unit_testing.get_mocking_strategy() %}
+    {% set mocking_strategy = dbt_unit_testing.get_mocking_strategy(options) %}
 
     {% set input_values_sql = dbt_unit_testing.build_input_values_sql(input_values, options) %}
     {% set model_node = dbt_unit_testing.graph_node(source_name, model_name) %}
@@ -100,13 +100,13 @@
 
 {% macro run_test(model_name, test_description, mocked_models, expectations, options) %}
   {% set hide_errors = options.get("hide_errors", false) %}
-  {% set mocking_strategy = dbt_unit_testing.get_mocking_strategy() %}
+  {% set mocking_strategy = dbt_unit_testing.get_mocking_strategy(options) %}
 
   {% set model_node = dbt_unit_testing.model_node(model_name) %}
-  {% set options = { "fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW',
-                     "include_all_dependencies": not mocking_strategy.simplified } %}
+  {% set sql_options = { "fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW',
+                         "include_all_dependencies": not mocking_strategy.simplified } %}
 
-  {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, mocked_models, options) %}
+  {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, mocked_models, sql_options) %}
   {% set columns = dbt_unit_testing.extract_columns_list(expectations) %}
   {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
 

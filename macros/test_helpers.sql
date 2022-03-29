@@ -74,8 +74,8 @@
   {{ return (unit_tests_config.get(config_name, default_value))}}
 {% endmacro %}
 
-{% macro get_mocking_strategy() %}
-  {% set mocking_strategy = dbt_unit_testing.get_config("mocking_strategy", 'FULL') %}
+{% macro get_mocking_strategy(options) %}
+  {% set mocking_strategy = options.get("mocking_strategy", dbt_unit_testing.get_config("mocking_strategy", 'FULL')) %}
   {% set full = mocking_strategy | upper == 'FULL' %}
   {% set simplified = mocking_strategy | upper == 'SIMPLIFIED' %}
   {% set database = mocking_strategy | upper == 'DATABASE' %}

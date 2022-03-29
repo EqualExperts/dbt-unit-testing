@@ -228,15 +228,15 @@ sources:
 
 In some environments (particularly BigQuery), you may find that you need to reduce query complexity. There are three levels of complexity that you can specify when running tests, in decreasing order of complexity:
 
-- *Full*
-- *Simplified*
-- *Database*
+- *`Full`*
+- *`Simplified`*
+- *`Database`*
 
-The *Full* strategy provides the better developer experience by mocking all the models with the SQL that's on each model's file. There is no need to materialize the models in the database to run the tests. It can also infer the types of all the columns that are not used in a mocked model, preventing some type mismatches when running the tests.
+The *`Full`* strategy provides the better developer experience by mocking all the models with the SQL that's on each model's file. There is no need to materialize the models in the database to run the tests. It can also infer the types of all the columns that are not used in a mocked model, preventing some type mismatches when running the tests.
 
-The *Simplified* strategy builds less complex test queries but it doesn't infer the columns types as the `Full` strategy does. This means that sometimes you need to declare the type of a column in the mocking sql, even if you don't need that column in the test.
+The *`Simplified`* strategy builds less complex test queries but it doesn't infer the columns types as the `Full` strategy does. This means that sometimes you need to declare the type of a column in the mocking sql, even if you don't need that column in the test.
 
-The *Database* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database. The only exception is the model being tested, this one will always use the SQL from its file.
+The *`Database`* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database. The only exception is the model being tested, this one will always use the SQL from its file.
 
 You can specify the mocking strategy in the dbt_project.yml file, like this:
 
@@ -245,6 +245,24 @@ vars:
   unit_tests_config:
     mocking_stategy: Full
 ```
+
+You can also specify a different mocking strategy for a specific model in the test, like this:
+
+```jinja
+{% call dbt_unit_testing.test('some_model') %}
+
+  {% call dbt_unit_testing.mock_ref('some_model_to_be_mocked', {"mocking_strategy": "SIMPLIFIED"} ) %}
+    select 1 as t
+  {% endcall %}
+
+  ...
+
+{% endcall %}
+```
+
+All the mocked models in the other tests will use the mocking strategy declared in dbt_project.yml file (or `FULL`, if none is specified), but this particular model in this test will use the `SIMPLIFIED` strategy. This can be useful if you want to use the power of the `FULL` strategy in all models except for the ones that increase the complexity of the final SQL.
+
+Note: Strategy names are case insensitive
 
 ### Convenience features
 
