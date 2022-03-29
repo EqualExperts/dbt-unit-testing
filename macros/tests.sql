@@ -79,7 +79,7 @@
           {% endfor %}
           left join (select {{ null_extra_columns | join (",")}}) as {{model_name}}_tmp_3 on false
         {% else %}
-          {% set simple_node_sql = dbt_unit_testing.build_node_sql(model_node, {"fetch_mode": 'RAW'}) %}
+          {% set simple_node_sql = dbt_unit_testing.build_node_sql(model_node, {"fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW' }) %}
             left join (select {{ extra_columns | join (",")}}
                       from ({{ simple_node_sql }}) as {{model_name}}_tmp_2) as {{model_name}}_tmp_3 on false
         {% endif %}
@@ -107,8 +107,7 @@
                          "include_all_dependencies": not mocking_strategy.simplified } %}
 
   {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, mocked_models, sql_options) %}
-  {% set columns = dbt_unit_testing.extract_columns_list(expectations) %}
-  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
+  {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations)) %}
 
   {%- set actual_query -%}
     select {{columns}} from ( {{ model_complete_sql }} ) as s

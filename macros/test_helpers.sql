@@ -1,7 +1,8 @@
 {% macro extract_columns_list(query) %}
   {% if execute %}
     {% set results = run_query(query) %}
-    {{ return(results.columns | map(attribute='name') | list) }}
+    {% set columns = results.columns | map(attribute='name') | list %}
+    {{ return (columns) }}
   {% else %}
     {{ return([]) }}
   {% endif %}
@@ -11,6 +12,12 @@
   {% set columns = cl1 | list | reject('in', cl2) | list %}
   {{ return(columns) }}
 {% endmacro %}
+
+{% macro quote_and_join_columns(columns) %}
+  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
+  {{ return (columns) }}
+{% endmacro %}
+
 
 {% macro sql_encode(s) %}
   {{ return (s.replace('"', '####_quote_####').replace('\n', '####_cr_####').replace('\t', '####_tab_####')) }}
@@ -76,6 +83,9 @@
 
 {% macro get_mocking_strategy(options) %}
   {% set mocking_strategy = options.get("mocking_strategy", dbt_unit_testing.get_config("mocking_strategy", 'FULL')) %}
+  {% if mocking_strategy | upper not in ['FULL', 'SIMPLIFIED', 'DATABASE']%}
+    {{ exceptions.raise_compiler_error("Invalid mocking strategy: " ~ mocking_strategy) }}
+  {% endif%}
   {% set full = mocking_strategy | upper == 'FULL' %}
   {% set simplified = mocking_strategy | upper == 'SIMPLIFIED' %}
   {% set database = mocking_strategy | upper == 'DATABASE' %}

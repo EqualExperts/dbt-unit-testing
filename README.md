@@ -236,7 +236,7 @@ The *`Full`* strategy provides the better developer experience by mocking all th
 
 The *`Simplified`* strategy builds less complex test queries but it doesn't infer the columns types as the `Full` strategy does. This means that sometimes you need to declare the type of a column in the mocking sql, even if you don't need that column in the test.
 
-The *`Database`* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database. The only exception is the model being tested, this one will always use the SQL from its file.
+The *`Database`* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database (the only exception being the model being tested, which will always use the SQL from its file). Furthermore, you need to ensure that the models in the database contains no rows, otherwise the tests could be affected by them.
 
 You can specify the mocking strategy in the dbt_project.yml file, like this:
 

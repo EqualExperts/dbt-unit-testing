@@ -76,14 +76,14 @@
     {%- set source_sql -%}
       select * from {{ node.schema }}.{{ node.name }} where false
     {%- endset -%}
-    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
     from {{ node.schema }}.{{ node.name }}
     where false
   {% else %}
     {% if node.columns %}
       {% set columns = [] %}
       {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c.name)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
@@ -101,14 +101,14 @@
     {%- set source_sql -%}
       select * from {{ node.schema }}.{{ node.name }} where false
     {%- endset -%}
-    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
     from {{ node.schema }}.{{ node.name }}
     where false
   {% else %}
     {% if node.columns %}
       {% set columns = [] %}
       {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ c.name) %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c.name)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
@@ -126,14 +126,14 @@
     {%- set source_sql -%}
       select * from {{ node.schema }}.{{ node.name }} where false
     {%- endset -%}
-    select {{ dbt_unit_testing.extract_columns_list(source_sql) | join (",") }}
+    select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
     from {{ node.schema }}.{{ node.name }}
     where false
   {% else %}
     {% if node.config and node.config.column_types %}
       {% set columns = [] %}
       {% for c in node.config.column_types.keys() %}
-        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ c) %}
+        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
