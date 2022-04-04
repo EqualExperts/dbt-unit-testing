@@ -69,15 +69,16 @@
 
 {% macro fake_model_sql(node) %}
   {% set source_relation = dbt_utils.get_relations_by_pattern(
+      database=node.database,
       schema_pattern=node.schema,
       table_pattern=node.name
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{ node.schema }}.{{ node.name }} where false
+      select * from {{node.database}}.{{ node.schema }}.{{ node.name }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ node.schema }}.{{ node.name }}
+    from {{node.database}}.{{ node.schema }}.{{ node.name }}
     where false
   {% else %}
     {% if node.columns %}
@@ -94,15 +95,16 @@
 
 {% macro fake_source_sql(node) %}
   {% set source_relation = dbt_utils.get_relations_by_pattern(
+      database=node.database,
       schema_pattern=node.schema,
       table_pattern=node.name
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{ node.schema }}.{{ node.name }} where false
+      select * from {{node.database}}.{{ node.schema }}.{{ node.name }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ node.schema }}.{{ node.name }}
+    from {{node.database}}.{{ node.schema }}.{{ node.name }}
     where false
   {% else %}
     {% if node.columns %}
@@ -119,15 +121,16 @@
 
 {% macro fake_seed_sql(node) %}
   {% set source_relation = dbt_utils.get_relations_by_pattern(
+      database=node.database,
       schema_pattern=node.schema,
       table_pattern=node.name
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{ node.schema }}.{{ node.name }} where false
+      select * from {{node.database}}.{{ node.schema }}.{{ node.name }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ node.schema }}.{{ node.name }}
+    from {{node.database}}.{{ node.schema }}.{{ node.name }}
     where false
   {% else %}
     {% if node.config and node.config.column_types %}
