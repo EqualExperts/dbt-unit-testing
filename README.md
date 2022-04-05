@@ -39,7 +39,7 @@ The goal is to write the test, write the model, and then run the test (with “d
 
 - Use fake inputs on any model or source
 - Define fake inputs with sql or csv format within the test
-- Run tests without need to run dbt and install the models into a database.
+- Run tests without the need to run dbt and install the models into a database.
 - Focus the test on what’s important
 - Provide fast and valuable feedback
 - Write more than one test on a dbt test file
@@ -194,7 +194,7 @@ Alternatively, if you prefer to keep using the standard `ref` macro in the model
 {% endmacro %}
 ```
 
-Also the sources columns must be available. If sources are not present in the database,  you have to declare them in your sources file. Example:
+Also, the sources columns must be available. If sources are not present in the database,  you have to declare them in your sources file. Example:
 
 ```yaml
 sources:
@@ -232,11 +232,13 @@ In some environments (particularly BigQuery), you may find that you need to redu
 - *`Simplified`*
 - *`Database`*
 
-The *`Full`* strategy provides the better developer experience by mocking all the models with the SQL that's on each model's file. There is no need to materialize the models in the database to run the tests. It can also infer the types of all the columns that are not used in a mocked model, preventing some type mismatches when running the tests.
+The *`Full`* strategy provides the best developer experience by mocking all the models with the SQL that's on each model's file. There is no need to materialize the models in the database to run the tests. It can also infer the types of all the columns that are not used in a mocked model, preventing some type mismatches when running the tests.
 
-The *`Simplified`* strategy builds less complex test queries but it doesn't infer the columns types as the `Full` strategy does. This means that sometimes you need to declare the type of a column in the mocking sql, even if you don't need that column in the test.
+The *`Simplified`* strategy builds less complex test queries but it doesn't infer the types of the columns as the `Full` strategy does. This means that sometimes you need to declare the type of a column in the mocking sql, even if you don't need that column in the test.
 
-The *`Database`* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database (the only exception being the model being tested, which will always use the SQL from its file). Furthermore, you need to ensure that the models in the database contains no rows, otherwise the tests could be affected by them.
+The *`Database`* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database (the only exception being the model being tested, which will always use the SQL from its file).
+Another downside of this strategy is that you can only mock the immediate parents of the model being tested. If you have a model hierarchy like A->B->C, for instance, you have to mock model B to test model A, you cannot mock model C (the other strategies allow this).
+Furthermore, you need to ensure that the models in the database contain no rows, otherwise, the tests could be affected by them.
 
 You can specify the mocking strategy in the dbt_project.yml file, like this:
 
@@ -271,8 +273,8 @@ Note: Strategy names are case insensitive
 
 #### Test Feedback
 
-Good test feedback is what allow us to be productive when developing unit tests and developing our models.
-The test macro provides visual feedback when a test fails showing what went wrong comparing the lines of the expectations with the actuals.
+Good test feedback is what allows us to be productive when developing unit tests and developing our models.
+The test macro provides visual feedback when a test fails showing what went wrong by comparing the lines of the expectations with the actuals.
 
 ##### Example
 

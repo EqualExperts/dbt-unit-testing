@@ -104,7 +104,7 @@
 
   {% set model_node = dbt_unit_testing.model_node(model_name) %}
   {% set sql_options = { "fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW',
-                         "include_all_dependencies": not mocking_strategy.simplified } %}
+                         "include_all_dependencies": mocking_strategy.full } %}
 
   {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, mocked_models, sql_options) %}
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations)) %}
