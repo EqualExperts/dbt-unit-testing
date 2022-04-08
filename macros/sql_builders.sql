@@ -46,7 +46,7 @@
   {% set model_dependencies = [] %}
   {% for node_id in node.depends_on.nodes %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
-    {% if node.resource_type == 'model' and (models_names_to_exclude is none or node.name not in models_names_to_exclude) %}
+    {% if node.resource_type in ('model','snapshot') and (models_names_to_exclude is none or node.name not in models_names_to_exclude) %}
       {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
       {% for dependency_node_id in child_model_dependencies %}
         {{ model_dependencies.append(dependency_node_id) }}
@@ -61,7 +61,7 @@
 {% macro build_node_sql (node, options) %}
   {% if execute %}
     {% set fetch_mode = options.get("fetch_mode") %}
-    {% if node.resource_type == 'model' %}
+    {% if node.resource_type in ('model','snapshot') %}
       {% if fetch_mode | upper == 'FULL' %}
         {{ dbt_unit_testing.build_model_complete_sql(node, {}, {"fetch_mode": 'RAW'}) }}
       {% elif fetch_mode | upper == 'RAW' %}
@@ -156,6 +156,3 @@
     {% endif %}
   {% endif %}
 {% endmacro %}
-
-
-

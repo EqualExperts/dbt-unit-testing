@@ -55,7 +55,13 @@
   {% if execute %}
     {% set node = graph.nodes["model." ~ project_name ~ "." ~ model_name] %}
     {% if not node %}
-      {% set node = graph.nodes["seed." ~ project_name ~ "." ~ model_name] %}
+      {% set node = graph.nodes["snapshot." ~ project_name ~ "." ~ model_name] %}
+      {% if not node %}
+        {% set node = graph.nodes["seed." ~ project_name ~ "." ~ model_name] %}
+         {% if not node %}
+           {{ exceptions.raise_compiler_error("Node "  ~ project_name ~ "." ~ model_name ~ " not found.") }}
+         {% endif %}
+      {% endif %}
     {% endif %}
     {{ return (node) }}
   {% endif %}
