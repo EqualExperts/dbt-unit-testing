@@ -1,3 +1,7 @@
+{% macro node_to_sql(node) %}
+  {{ return(dbt_unit_testing.quote_column_name(node.database ~ '.' ~ node.schema ~ '.' ~ node.name))}}
+{% endmacro %}
+
 {% macro build_model_complete_sql(model_node, mocked_models, options) %}
   {% if execute %}
     {% set include_all_dependencies = options.get("include_all_dependencies", false) %}
@@ -75,10 +79,10 @@
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from `{{node.database}}.{{ node.schema }}.{{ node.name }}` where false
+      select * from {{ dbt_unit_testing.node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from `{{node.database}}.{{ node.schema }}.{{ node.name }}`
+    from {{ dbt_unit_testing.node_to_sql(node) }}
     where false
   {% else %}
     {% if node.columns %}
@@ -101,10 +105,10 @@
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from `{{node.database}}.{{ node.schema }}.{{ node.name }}` where false
+      select * from {{ dbt_unit_testing.node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from `{{node.database}}.{{ node.schema }}.{{ node.name }}`
+    from {{ dbt_unit_testing.node_to_sql(node) }}
     where false
   {% else %}
     {% if node.columns %}
@@ -127,10 +131,10 @@
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from `{{node.database}}.{{ node.schema }}.{{ node.name }}` where false
+      select * from {{ dbt_unit_testing.node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from `{{node.database}}.{{ node.schema }}.{{ node.name }}`
+    from {{ dbt_unit_testing.node_to_sql(node) }}
     where false
   {% else %}
     {% if node.config and node.config.column_types %}
