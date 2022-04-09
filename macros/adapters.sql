@@ -1,27 +1,27 @@
-{% macro quote_column_name(column_name) %}
-    {{ return(adapter.dispatch('quote_column_name','dbt_unit_testing')(column_name)) }}
+{% macro quote_identifier(identifier) %}
+    {{ return(adapter.dispatch('quote_identifier','dbt_unit_testing')(identifier)) }}
 {% endmacro %}
 
-{% macro default__quote_column_name(column_name) -%}
-    {% if column_name.startswith('"') %}
-      {{ return(column_name) }}
+{% macro default__quote_identifier(identifier) -%}
+    {% if identifier.startswith('"') %}
+      {{ return(identifier) }}
     {% else %}
-      {{ return('"' ~ column_name ~ '"') }}
+      {{ return('"' ~ identifier ~ '"') }}
     {% endif %}
 {%- endmacro %}
 
-{% macro bigquery__quote_column_name(column_name) %}
-    {% if column_name.startswith('`') %}
-      {{ return(column_name) }}
+{% macro bigquery__quote_identifier(identifier) %}
+    {% if identifier.startswith('`') %}
+      {{ return(identifier) }}
     {% else %}
-      {{ return('`' ~ column_name ~ '`') }}
+      {{ return('`' ~ identifier ~ '`') }}
     {% endif %}
 {% endmacro %}
 
-{% macro snowflake__quote_column_name(column_name) %}
-    {% if column_name.startswith('"') %}
-      {{ return(column_name) }}
+{% macro snowflake__quote_identifier(identifier) %}
+    {% if identifier.startswith('"') %}
+      {{ return(identifier) }}
     {% else %}
-      {{ return('"' ~ column_name | upper ~ '"') }}
+      {{ return('"' ~ identifier | upper ~ '"') }}
     {% endif %}
 {% endmacro %}

@@ -1,5 +1,5 @@
 {% macro node_to_sql(node) %}
-  {{ return(dbt_unit_testing.quote_column_name(node.database ~ '.' ~ node.schema ~ '.' ~ node.name))}}
+  {{ return(dbt_unit_testing.quote_identifier(node.database ~ '.' ~ node.schema ~ '.' ~ node.name))}}
 {% endmacro %}
 
 {% macro build_model_complete_sql(model_node, mocked_models, options) %}
@@ -88,7 +88,7 @@
     {% if node.columns %}
       {% set columns = [] %}
       {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c.name)) %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c.name)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
@@ -114,7 +114,7 @@
     {% if node.columns %}
       {% set columns = [] %}
       {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c.name)) %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c.name)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
@@ -140,7 +140,7 @@
     {% if node.config and node.config.column_types %}
       {% set columns = [] %}
       {% for c in node.config.column_types.keys() %}
-        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c)) %}
+        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
