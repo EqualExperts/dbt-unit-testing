@@ -1,1 +1,1 @@
-select 1 as "example"
+select 2 as example

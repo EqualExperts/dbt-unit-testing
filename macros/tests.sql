@@ -20,7 +20,7 @@
 
 {% macro ref(model_name) %}
   {%- if 'unit-test' in config.get('tags') -%}
-      {{model_name}}
+      {{ dbt_unit_testing.quote_identifier(model_name) }}
   {%- else -%}
       {{ return (builtins.ref(model_name)) }}
   {%- endif -%}
@@ -28,7 +28,7 @@
 
 {% macro source(source, model_name) %}
   {%- if 'unit-test' in config.get('tags') -%}
-      {{model_name}}
+      {{ dbt_unit_testing.quote_identifier(model_name) }}
   {%- else -%}
       {{ return (builtins.source(source, model_name)) }}
   {%- endif -%}
@@ -69,7 +69,7 @@
     {% set extra_columns = dbt_unit_testing.extract_columns_difference(model_columns, input_columns) %}
 
     {%- set input_sql_with_all_columns -%}
-      select * from ({{input_values_sql}}) as {{model_name}}_tmp_1
+      select * from ({{input_values_sql}}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_1')}}
 
       {% if extra_columns %}
         {% if mocking_strategy.simplified %}
@@ -77,11 +77,11 @@
           {% for c in extra_columns %}
             {% set null_extra_columns = null_extra_columns.append("null as " ~ c) %}
           {% endfor %}
-          left join (select {{ null_extra_columns | join (",")}}) as {{model_name}}_tmp_3 on false
+          left join (select {{ null_extra_columns | join (",")}}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_3') }} on false
         {% else %}
           {% set simple_node_sql = dbt_unit_testing.build_node_sql(model_node, {"fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW' }) %}
             left join (select {{ extra_columns | join (",")}}
-                      from ({{ simple_node_sql }}) as {{model_name}}_tmp_2) as {{model_name}}_tmp_3 on false
+                      from ({{ simple_node_sql }}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_2') }}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_3') }} on false
         {% endif %}
       {% endif %}
 

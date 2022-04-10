@@ -9,3 +9,7 @@ sources:
             data_type: integer
           - name: source_b
       - name: sample_source_without_columns_declared
+      - name: source-with-dashes
+        columns:
+          - name: example
+            data_type: integer

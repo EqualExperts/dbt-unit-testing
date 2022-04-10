@@ -1,5 +1,5 @@
 {% macro node_to_sql(node) %}
-  {{ return(dbt_unit_testing.quote_identifier(node.database ~ '.' ~ node.schema ~ '.' ~ node.name))}}
+  {{ return(dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(node.name))}}
 {% endmacro %}
 
 {% macro build_model_complete_sql(model_node, mocked_models, options) %}
@@ -17,7 +17,7 @@
       {% else %}
         {% set sql = dbt_unit_testing.build_node_sql(node, options) %}
       {% endif %}
-      {% set cte = node.name ~ " as (" ~ sql ~ ")" %}
+      {% set cte = dbt_unit_testing.quote_identifier(node.name) ~ " as (" ~ sql ~ ")" %}
       {% set cte_dependencies = cte_dependencies.append(cte) %}
     {%- endfor -%}
 
