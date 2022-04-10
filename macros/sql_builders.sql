@@ -1,5 +1,13 @@
-{% macro node_to_sql(node) %}
-  {{ return(dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(node.name))}}
+{% macro node_to_sql(database, schema, identifier) %}
+  {{ return(dbt_unit_testing.quote_identifier(database) ~ '.' ~ dbt_unit_testing.quote_identifier(schema) ~ '.' ~ dbt_unit_testing.quote_identifier(identifier))}}
+{% endmacro %}
+
+{% macro source_node_to_sql(node) %}
+  {{ return(dbt_unit_testing.node_to_sql(node.database, node.schema, node.identifier))}}
+{% endmacro %}
+
+{% macro model_node_to_sql(node) %}
+  {{ return(dbt_unit_testing.node_to_sql(node.database, node.schema, node.name))}}
 {% endmacro %}
 
 {% macro build_model_complete_sql(model_node, mocked_models, options) %}
@@ -79,10 +87,10 @@
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{ dbt_unit_testing.node_to_sql(node) }} where false
+      select * from {{ dbt_unit_testing.model_node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ dbt_unit_testing.node_to_sql(node) }}
+    from {{ dbt_unit_testing.model_node_to_sql(node) }}
     where false
   {% else %}
     {% if node.columns %}
@@ -101,14 +109,14 @@
   {% set source_relation = dbt_utils.get_relations_by_pattern(
       database=node.database,
       schema_pattern=node.schema,
-      table_pattern=node.name
+      table_pattern=node.identifier
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{ dbt_unit_testing.node_to_sql(node) }} where false
+      select * from {{ dbt_unit_testing.source_node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ dbt_unit_testing.node_to_sql(node) }}
+    from {{ dbt_unit_testing.source_node_to_sql(node) }}
     where false
   {% else %}
     {% if node.columns %}
@@ -131,10 +139,10 @@
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{ dbt_unit_testing.node_to_sql(node) }} where false
+      select * from {{ dbt_unit_testing.model_node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ dbt_unit_testing.node_to_sql(node) }}
+    from {{ dbt_unit_testing.model_node_to_sql(node) }}
     where false
   {% else %}
     {% if node.config and node.config.column_types %}
