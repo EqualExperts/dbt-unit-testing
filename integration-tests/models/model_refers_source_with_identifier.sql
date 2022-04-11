@@ -1,0 +1,1 @@
+select * from {{ dbt_unit_testing.source('dbt_unit_testing', 'sample_source_name') }}

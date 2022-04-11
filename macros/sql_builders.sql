@@ -1,3 +1,15 @@
+{% macro node_to_sql(database, schema, identifier) %}
+  {{ return(dbt_unit_testing.quote_identifier(database) ~ '.' ~ dbt_unit_testing.quote_identifier(schema) ~ '.' ~ dbt_unit_testing.quote_identifier(identifier))}}
+{% endmacro %}
+
+{% macro source_node_to_sql(node) %}
+  {{ return(dbt_unit_testing.node_to_sql(node.database, node.schema, node.identifier))}}
+{% endmacro %}
+
+{% macro model_node_to_sql(node) %}
+  {{ return(dbt_unit_testing.node_to_sql(node.database, node.schema, node.name))}}
+{% endmacro %}
+
 {% macro build_model_complete_sql(model_node, mocked_models, options) %}
   {% if execute %}
     {% set include_all_dependencies = options.get("include_all_dependencies", false) %}
@@ -13,7 +25,7 @@
       {% else %}
         {% set sql = dbt_unit_testing.build_node_sql(node, options) %}
       {% endif %}
-      {% set cte = node.name ~ " as (" ~ sql ~ ")" %}
+      {% set cte = dbt_unit_testing.quote_identifier(node.name) ~ " as (" ~ sql ~ ")" %}
       {% set cte_dependencies = cte_dependencies.append(cte) %}
     {%- endfor -%}
 
@@ -75,16 +87,16 @@
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{node.database}}.{{ node.schema }}.{{ node.name }} where false
+      select * from {{ dbt_unit_testing.model_node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{node.database}}.{{ node.schema }}.{{ node.name }}
+    from {{ dbt_unit_testing.model_node_to_sql(node) }}
     where false
   {% else %}
     {% if node.columns %}
       {% set columns = [] %}
       {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c.name)) %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c.name)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
@@ -97,20 +109,20 @@
   {% set source_relation = dbt_utils.get_relations_by_pattern(
       database=node.database,
       schema_pattern=node.schema,
-      table_pattern=node.name
+      table_pattern=node.identifier
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{node.database}}.{{ node.schema }}.{{ node.name }} where false
+      select * from {{ dbt_unit_testing.source_node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{node.database}}.{{ node.schema }}.{{ node.name }}
+    from {{ dbt_unit_testing.source_node_to_sql(node) }}
     where false
   {% else %}
     {% if node.columns %}
       {% set columns = [] %}
       {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c.name)) %}
+        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c.name)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}
@@ -127,16 +139,16 @@
   ) %}
   {% if source_relation | length > 0 %}
     {%- set source_sql -%}
-      select * from {{node.database}}.{{ node.schema }}.{{ node.name }} where false
+      select * from {{ dbt_unit_testing.model_node_to_sql(node) }} where false
     {%- endset -%}
     select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{node.database}}.{{ node.schema }}.{{ node.name }}
+    from {{ dbt_unit_testing.model_node_to_sql(node) }}
     where false
   {% else %}
     {% if node.config and node.config.column_types %}
       {% set columns = [] %}
       {% for c in node.config.column_types.keys() %}
-        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_column_name(c)) %}
+        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c)) %}
       {% endfor %}
       select {{ columns | join (",") }}
     {% else %}

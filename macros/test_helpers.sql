@@ -14,7 +14,7 @@
 {% endmacro %}
 
 {% macro quote_and_join_columns(columns) %}
-  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_name) | join(",") %}
+  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_identifier) | join(",") %}
   {{ return (columns) }}
 {% endmacro %}
 
