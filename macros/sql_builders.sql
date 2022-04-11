@@ -80,79 +80,41 @@
 {% endmacro %}
 
 {% macro fake_model_sql(node) %}
-  {% set source_relation = dbt_utils.get_relations_by_pattern(
-      database=node.database,
-      schema_pattern=node.schema,
-      table_pattern=node.name
-  ) %}
-  {% if source_relation | length > 0 %}
-    {%- set source_sql -%}
-      select * from {{ dbt_unit_testing.model_node_to_sql(node) }} where false
-    {%- endset -%}
-    select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ dbt_unit_testing.model_node_to_sql(node) }}
-    where false
-  {% else %}
-    {% if node.columns %}
-      {% set columns = [] %}
-      {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c.name)) %}
-      {% endfor %}
-      select {{ columns | join (",") }}
-    {% else %}
-      {{ exceptions.raise_compiler_error("Model " ~ node.name ~ " columns must be declared in schema.yml, or it must exist in database") }}
-    {% endif %}
-  {% endif %}
+  {{ dbt_unit_testing.get_columns_sql(node, node.name, node.columns, "Model " ~ node.name ~ " columns must be declared in schema.yml, or it must exist in database") }}
 {% endmacro %}
 
 {% macro fake_source_sql(node) %}
-  {% set source_relation = dbt_utils.get_relations_by_pattern(
-      database=node.database,
-      schema_pattern=node.schema,
-      table_pattern=node.identifier
-  ) %}
-  {% if source_relation | length > 0 %}
-    {%- set source_sql -%}
-      select * from {{ dbt_unit_testing.source_node_to_sql(node) }} where false
-    {%- endset -%}
-    select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ dbt_unit_testing.source_node_to_sql(node) }}
-    where false
-  {% else %}
-    {% if node.columns %}
-      {% set columns = [] %}
-      {% for c in node.columns.values() %}
-        {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c.name)) %}
-      {% endfor %}
-      select {{ columns | join (",") }}
-    {% else %}
-      {{ exceptions.raise_compiler_error("Source " ~ node.name ~ " columns must be declared in sources.yml, or it must exist in database") }}
-    {% endif %}
-  {% endif %}
+  {{ dbt_unit_testing.get_columns_sql(node, node.identifier, node.columns, "Source " ~ node.name ~ " columns must be declared in sources.yml, or it must exist in database") }}
 {% endmacro %}
 
 {% macro fake_seed_sql(node) %}
-  {% set source_relation = dbt_utils.get_relations_by_pattern(
-      database=node.database,
-      schema_pattern=node.schema,
-      table_pattern=node.name
-  ) %}
-  {% if source_relation | length > 0 %}
-    {%- set source_sql -%}
-      select * from {{ dbt_unit_testing.model_node_to_sql(node) }} where false
-    {%- endset -%}
-    select {{ dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(source_sql)) }}
-    from {{ dbt_unit_testing.model_node_to_sql(node) }}
+  {% set columns = {} %}
+  {% if node.config and node.config.column_types %}
+    {% for c in node.config.column_types.keys() %}
+    {% do columns.update({c: {"name" : c, "data_type": node.config.column_types[c]} }) %}
+    {% endfor %}
+  {% endif %}
+  {{ dbt_unit_testing.get_columns_sql(node, node.name, columns, "Seed " ~ node.name ~ " columns must be declared in properties.yml, or it must exist in database") }}
+{% endmacro %}
+
+{% macro get_columns_sql(node, identifier, config_columns, error_message) %}
+  {% set columns = adapter.get_columns_in_relation(api.Relation.create(database=node.database, schema=node.schema, identifier=identifier)) %}
+  {% if columns | length > 0 %}
+    select {{ dbt_unit_testing.quote_and_join_columns(columns | map(attribute='name') | list) }}
+    from {{ dbt_unit_testing.node_to_sql(node.database, node.schema, identifier) }}
     where false
+  {% elif config_columns | length > 0 %}
+    {{ dbt_unit_testing.get_config_columns_sql(config_columns) }}
   {% else %}
-    {% if node.config and node.config.column_types %}
-      {% set columns = [] %}
-      {% for c in node.config.column_types.keys() %}
-        {% do columns.append("cast(null as " ~ (node.config.column_types[c] if node.config.column_types[c] is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c)) %}
-      {% endfor %}
-      select {{ columns | join (",") }}
-    {% else %}
-      {{ exceptions.raise_compiler_error("Seed " ~ node.name ~ " columns must be declared in properties.yml, or it must exist in database") }}
-    {% endif %}
+    {{ exceptions.raise_compiler_error(error_message) }}
   {% endif %}
 {% endmacro %}
+
+{% macro get_config_columns_sql(config_columns) %}
+  {% set columns = [] %}
+  {% for c in config_columns.values() %}
+    {% do columns.append("cast(null as " ~ (c.data_type if c.data_type is not none else dbt_utils.type_string()) ~ ") as " ~ dbt_unit_testing.quote_identifier(c.name)) %}
+  {% endfor %}
+  select {{ columns | join (",") }}
+{% endmacro %}
+
