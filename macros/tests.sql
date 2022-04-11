@@ -146,10 +146,9 @@
       {{ dbt_unit_testing.debug(test_query) }}
     {% endif %}
 
-    {% set r1 = run_query("select count(1) from (" ~ expectations_query ~ ") as t") %}
+    {% set r1 = run_query("select * FROM (select count(1) as expectation_count from (" ~ expectations_query ~ ")), (select count(1) as actual_count from (" ~ actual_query ~ "))") %}
     {% set expectations_row_count = r1.columns[0].values() | first %}
-    {% set r2 = run_query("select count(1) from (" ~ actual_query ~ ") as t") %}
-    {% set actual_row_count = r2.columns[0].values() | first %}
+    {% set actual_row_count = r1.columns[1].values() | first %}
 
     {% set results = run_query(test_query) %}
     {% set results_length = results.rows | length %}
