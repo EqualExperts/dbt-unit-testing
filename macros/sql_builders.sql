@@ -34,7 +34,8 @@
         with
         {{ cte_dependencies | join(",\n") }}
       {%- endif -%}
-      select * from ({{ render(model_node.raw_sql) }}) as t
+      {% set sql_without_end_semicolon = modules.re.sub(';[\s\r\n]*$', '', render(model_node.raw_sql), 0, modules.re.M) %}
+      select * from ({{ sql_without_end_semicolon }}) as t
     {%- endset -%}
 
     {{ return (final_sql) }}
@@ -65,7 +66,8 @@
       {% if fetch_mode | upper == 'FULL' %}
         {{ dbt_unit_testing.build_model_complete_sql(node, {}, {"fetch_mode": 'RAW'}) }}
       {% elif fetch_mode | upper == 'RAW' %}
-        {{ render(node.raw_sql) }}
+        {% set sql_without_end_semicolon = modules.re.sub(';[\s\r\n]*$', '', render(node.raw_sql), 0, modules.re.M) %}
+        {{ sql_without_end_semicolon }}
       {% elif fetch_mode | upper == 'DATABASE' %}
         {{ dbt_unit_testing.fake_model_sql(node) }}
       {% else %}
