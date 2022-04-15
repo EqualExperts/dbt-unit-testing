@@ -2,14 +2,6 @@
   {{ return(dbt_unit_testing.quote_identifier(database) ~ '.' ~ dbt_unit_testing.quote_identifier(schema) ~ '.' ~ dbt_unit_testing.quote_identifier(identifier))}}
 {% endmacro %}
 
-{% macro source_node_to_sql(node) %}
-  {{ return(dbt_unit_testing.node_to_sql(node.database, node.schema, node.identifier))}}
-{% endmacro %}
-
-{% macro model_node_to_sql(node) %}
-  {{ return(dbt_unit_testing.node_to_sql(node.database, node.schema, node.name))}}
-{% endmacro %}
-
 {% macro build_model_complete_sql(model_node, mocked_models, options) %}
   {% if execute %}
     {% set include_all_dependencies = options.get("include_all_dependencies", false) %}
