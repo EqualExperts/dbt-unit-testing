@@ -90,7 +90,7 @@
 {% endmacro %}
 
 {% macro get_columns_sql(node, identifier, config_columns, error_message) %}
-  {% set columns = adapter.get_columns_in_relation(api.Relation.create(database=node.database, schema=node.schema, identifier=identifier)) %}
+  {% set columns = adapter.get_columns_in_relation(api.Relation.create(database=node.database, schema=node.schema, identifier=identifier, quote_policy=node.get('quoting', {}))) %}
   {% if columns | length > 0 %}
     select {{ dbt_unit_testing.quote_and_join_columns(columns | map(attribute='name') | list) }}
     from {{ dbt_unit_testing.node_to_sql(node.database, node.schema, identifier) }}

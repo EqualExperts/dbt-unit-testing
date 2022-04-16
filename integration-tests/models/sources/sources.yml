@@ -13,5 +13,7 @@ sources:
         columns:
           - name: example
             data_type: integer
+        quoting:
+          identifier: true
       - name: sample_source_name
         identifier: sample_source_identifier
