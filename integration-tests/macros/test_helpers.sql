@@ -1,5 +1,6 @@
 {% macro test_should_fail (model_name, test_description) %}
   {% set test_info = caller() %}
+  {{ dbt_unit_testing.ref_tested_model(model_name) }}
   {% if execute %}
     {% set query = dbt_unit_testing._test(model_name, test_description, test_info, {"hide_errors": true}) %}
     {% set r1 = run_query(query) %}

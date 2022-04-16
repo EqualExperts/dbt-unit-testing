@@ -1,5 +1,14 @@
 {% macro test(model_name, test_description, options={}) %}
-    {{ dbt_unit_testing._test(model_name, test_description, caller(), options)}}
+  {{ dbt_unit_testing.ref_tested_model(model_name) }}
+  {{ dbt_unit_testing._test(model_name, test_description, caller(), options)}}
+{% endmacro %}
+
+{% macro ref_tested_model(model_name) %}
+  {% set ref_tested_model %}
+    -- We add an (unused) reference to the tested model,
+    -- so that DBT includes the model as a dependency of the test in the DAG
+    select * from {{ ref(model_name) }}
+  {% endset %}
 {% endmacro %}
 
 {% macro _test(model_name, test_description, test_info, options={}) %}
@@ -119,12 +128,12 @@
 
   {%- set test_query -%}
     with
-  
+
     expectations as ({{ expectations_query }}),
     actual as ({{ actual_query }}),
 
     extra_entries as (
-    select '+' as diff, {{columns}} from actual 
+    select '+' as diff, {{columns}} from actual
     {{ dbt_utils.except() }}
     select '+' as diff, {{columns}} from expectations),
 
@@ -132,7 +141,7 @@
     select '-' as diff, {{columns}} from expectations
     {{ dbt_utils.except() }}
     select '-' as diff, {{columns}} from actual)
-    
+
     select * from extra_entries
     UNION ALL
     select * from missing_entries
