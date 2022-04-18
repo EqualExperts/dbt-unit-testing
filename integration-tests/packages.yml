@@ -2,3 +2,5 @@
 packages:
   - local: ../
   - local: ../integration-tests-sub-package
+  - package: dbt-labs/dbt_utils
+    version: [">=0.7.3"]
