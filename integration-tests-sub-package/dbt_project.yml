@@ -1,0 +1,6 @@
+name: "dbt_unit_testing_sub_package"
+version: "0.1.0"
+config-version: 2
+
+model-paths: ["models"]
+test-paths: ["tests"]

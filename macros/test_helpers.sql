@@ -52,14 +52,15 @@
 {% endmacro %}
 
 {% macro model_node (model_name) %}
+  {% set package_name = model.package_name %}
   {% if execute %}
-    {% set node = graph.nodes["model." ~ project_name ~ "." ~ model_name] %}
+    {% set node = graph.nodes["model." ~ package_name ~ "." ~ model_name] %}
     {% if not node %}
-      {% set node = graph.nodes["snapshot." ~ project_name ~ "." ~ model_name] %}
+      {% set node = graph.nodes["snapshot." ~ package_name ~ "." ~ model_name] %}
       {% if not node %}
-        {% set node = graph.nodes["seed." ~ project_name ~ "." ~ model_name] %}
+        {% set node = graph.nodes["seed." ~ package_name ~ "." ~ model_name] %}
          {% if not node %}
-           {{ exceptions.raise_compiler_error("Node "  ~ project_name ~ "." ~ model_name ~ " not found.") }}
+           {{ exceptions.raise_compiler_error("Node "  ~ package_name ~ "." ~ model_name ~ " not found.") }}
          {% endif %}
       {% endif %}
     {% endif %}
@@ -69,7 +70,7 @@
 
 {% macro source_node (source_name, model_name) %}
   {% if execute %}
-    {{ return (graph.sources["source." ~ project_name ~ "." ~ source_name ~ "." ~ model_name]) }}
+    {{ return (graph.sources["source." ~ model.package_name ~ "." ~ source_name ~ "." ~ model_name]) }}
   {% endif %}
 {% endmacro %}
 
