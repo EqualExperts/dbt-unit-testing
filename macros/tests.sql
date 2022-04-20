@@ -77,23 +77,23 @@
     {% set input_columns = dbt_unit_testing.extract_columns_list(input_values_sql) %}
     {% set extra_columns = dbt_unit_testing.extract_columns_difference(model_columns, input_columns) %}
 
-    {%- set input_sql_with_all_columns -%}
-      select * from ({{input_values_sql}}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_1')}}
-
-      {% if extra_columns %}
-        {% if mocking_strategy.simplified %}
+    {% set input_sql_with_all_columns %}
+      select * from (
+        {{input_values_sql}}
+      ) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_1')}}
+      {%- if extra_columns -%}
+        {%- if mocking_strategy.simplified -%}
           {% set null_extra_columns = [] %}
           {% for c in extra_columns %}
             {% set null_extra_columns = null_extra_columns.append("null as " ~ c) %}
           {% endfor %}
           left join (select {{ null_extra_columns | join (",")}}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_3') }} on false
-        {% else %}
+        {%- else -%}
           {% set simple_node_sql = dbt_unit_testing.build_node_sql(model_node, {"fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW' }) %}
             left join (select {{ extra_columns | join (",")}}
                       from ({{ simple_node_sql }}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_2') }}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_3') }} on false
-        {% endif %}
-      {% endif %}
-
+        {%- endif -%}
+      {%- endif -%}
     {%- endset -%}
 
     {% set input_as_json = '"' ~ model_name  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' %}
@@ -127,10 +127,12 @@
   {% endset %}
 
   {%- set test_query -%}
-    with
-
-    expectations as ({{ expectations_query }}),
-    actual as ({{ actual_query }}),
+    with expectations as (
+      {{ expectations_query }}
+    ),
+    actual as (
+      {{ actual_query }}
+    ),
 
     extra_entries as (
     select '+' as diff, {{columns}} from actual
@@ -145,8 +147,7 @@
     select * from extra_entries
     UNION ALL
     select * from missing_entries
-
-  {% endset %}
+  {%- endset -%}
 
   {% if execute %}
     {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
@@ -155,7 +156,14 @@
       {{ dbt_unit_testing.debug(test_query) }}
     {% endif %}
 
-    {% set r1 = run_query("select * FROM (select count(1) as expectation_count from (" ~ expectations_query ~ ") as exp) as exp_count, (select count(1) as actual_count from (" ~ actual_query ~ ") as act) as act_count") %}
+    {%- set count_query -%}
+      select * FROM (select count(1) as expectation_count from (
+          {{ expectations_query }}
+        ) as exp) as exp_count, (select count(1) as actual_count from (
+          {{ actual_query }}
+        ) as act) as act_count
+    {%- endset -%}
+    {% set r1 = run_query(count_query) %}
     {% set expectations_row_count = r1.columns[0].values() | first %}
     {% set actual_row_count = r1.columns[1].values() | first %}
 
@@ -174,6 +182,9 @@
         {% do results.print_table(max_columns=None, max_column_width=30) %}
       {% endif %}
     {% endif %}
+    with test_query as (
+      {{ test_query }}
+    )
     select 1 from (select 1) as t where {{ failed }}
   {% endif %}
 {% endmacro %}
