@@ -37,7 +37,7 @@
 
 {% macro source(source, model_name) %}
   {%- if 'unit-test' in config.get('tags') -%}
-      {{ dbt_unit_testing.quote_identifier(model_name) }}
+      {{ dbt_unit_testing.quote_identifier(source ~ "__" ~ model_name) }}
   {%- else -%}
       {{ return (builtins.source(source, model_name)) }}
   {%- endif -%}
@@ -96,7 +96,13 @@
       {%- endif -%}
     {%- endset -%}
 
-    {% set input_as_json = '"' ~ model_name  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' %}
+    {%- if source_name == '' -%}
+      {%- set model_key = model_name -%}
+    {%- else -%}
+      {%- set model_key = [source_name, model_name]|join('__') -%}
+    {%- endif -%}
+
+    {% set input_as_json = '"' ~ model_key  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' %}
     {{ return (input_as_json) }}
   {% endif %}
 {% endmacro %}
