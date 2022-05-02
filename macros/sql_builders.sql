@@ -51,31 +51,31 @@
 {% endmacro %}
 
 {% macro build_node_sql (node, options) %}
-  {% if execute %}
+  {%- if execute -%}
     {% set fetch_mode = options.get("fetch_mode") %}
-    {% if node.resource_type in ('model','snapshot') %}
-      {% if fetch_mode | upper == 'FULL' %}
+    {%- if node.resource_type in ('model','snapshot') -%}
+      {%- if fetch_mode | upper == 'FULL' -%}
         {{ dbt_unit_testing.build_model_complete_sql(node, {}, {"fetch_mode": 'RAW'}) }}
-      {% elif fetch_mode | upper == 'RAW' %}
+      {%- elif fetch_mode | upper == 'RAW' -%}
         {{ render(node.raw_sql) }}
-      {% elif fetch_mode | upper == 'DATABASE' %}
+      {%- elif fetch_mode | upper == 'DATABASE' -%}
         {{ dbt_unit_testing.fake_model_sql(node) }}
-      {% else %}
+      {%- else -%}
         {{ exceptions.raise_compiler_error("Invalid fetch_mode: " ~ fetch_mode) }}
-     {% endif %}
-    {% elif node.resource_type == 'seed'  %}
+     {%- endif -%}
+    {%- elif node.resource_type == 'seed' -%}
       {{ dbt_unit_testing.fake_seed_sql(node) }}
-    {% else %}
+    {%- else -%}
       {{ dbt_unit_testing.fake_source_sql(node) }}
-    {% endif %}
-  {% endif %}
+    {%- endif -%}
+  {%- endif -%}
 {% endmacro %}
 
-{% macro fake_model_sql(node) %}
+{%- macro fake_model_sql(node) -%}
   {{ dbt_unit_testing.get_columns_sql(node, node.name, node.columns, "Model " ~ node.name ~ " columns must be declared in schema.yml, or it must exist in database") }}
 {% endmacro %}
 
-{% macro fake_source_sql(node) %}
+{%- macro fake_source_sql(node) -%}
   {{ dbt_unit_testing.get_columns_sql(node, node.identifier, node.columns, "Source " ~ node.name ~ " columns must be declared in sources.yml, or it must exist in database") }}
 {% endmacro %}
 
@@ -91,15 +91,15 @@
 
 {% macro get_columns_sql(node, identifier, config_columns, error_message) %}
   {% set columns = adapter.get_columns_in_relation(api.Relation.create(database=node.database, schema=node.schema, identifier=identifier, quote_policy=node.get('quoting', {}))) %}
-  {% if columns | length > 0 %}
+  {%- if columns | length > 0 -%}
     select {{ dbt_unit_testing.quote_and_join_columns(columns | map(attribute='name') | list) }}
     from {{ dbt_unit_testing.node_to_sql(node.database, node.schema, identifier) }}
     where false
-  {% elif config_columns | length > 0 %}
+  {%- elif config_columns | length > 0 -%}
     {{ dbt_unit_testing.get_config_columns_sql(config_columns) }}
-  {% else %}
+  {%- else -%}
     {{ exceptions.raise_compiler_error(error_message) }}
-  {% endif %}
+  {%- endif -%}
 {% endmacro %}
 
 {% macro get_config_columns_sql(config_columns) %}
