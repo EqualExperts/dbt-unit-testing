@@ -182,9 +182,11 @@
         {% do results.print_table(max_columns=None, max_column_width=30) %}
       {% endif %}
     {% endif %}
-    with test_query as (
-      {{ test_query }}
+    (
+      with test_query as (
+        {{ test_query }}
+      )
+      select 1 from (select 1) as t where {{ failed }}
     )
-    select 1 from (select 1) as t where {{ failed }}
   {% endif %}
 {% endmacro %}
