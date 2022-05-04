@@ -20,7 +20,11 @@
     {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, dependencies_to_exclude) %}
     {% for node_id in model_dependencies %}
       {% set node = dbt_unit_testing.node_by_id(node_id) %}
-      {% set node_schema_name = node.schema ~ "_" ~ node.name %}
+      {% if node.resource_type == "source" %}
+        {% set node_schema_name = node.schema ~ "_" ~ node.name %}
+      {% else %}
+        {% set node_schema_name = node.name %}
+      {% endif %}
       {% if node_schema_name in mocked_models_names %}
         {% set sql = mocked_models[node_schema_name] %}
       {% else %}
@@ -47,7 +51,11 @@
   {% set model_dependencies = [] %}
   {% for node_id in node.depends_on.nodes %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
-    {% set node_schema_name = node.schema ~ "_" ~ node.name %}
+    {% if node.resource_type == "source" %}
+      {% set node_schema_name = node.schema ~ "_" ~ node.name %}
+    {% else %}
+      {% set node_schema_name = node.name %}
+    {% endif %}
     {% if node.resource_type in ('model','snapshot') and (models_names_to_exclude is none or node_schema_name not in models_names_to_exclude) %}
       {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
       {% for dependency_node_id in child_model_dependencies %}
