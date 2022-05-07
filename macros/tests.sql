@@ -150,9 +150,15 @@
     {{ dbt_utils.except() }}
     select '-' as diff, {{columns}} from actual)
 
-    select * from extra_entries
-    UNION ALL
-    select * from missing_entries
+    {% if options.get("primary_key", '') | length > 0 %}
+    select * from ( 
+    {% endif %}
+      select * from extra_entries
+      UNION ALL
+      select * from missing_entries
+    {% if options.get("primary_key", '') | length > 0 %}
+    ) order by {{options.get("primary_key", '')}}
+    {% endif %}
   {%- endset -%}
 
   {% if execute %}
