@@ -288,6 +288,8 @@ TEST:  Test country name join
 ```
 
 The first line was not on the model but the second line was.
+Also such example is stored in `target/unit_tests/` folder in CSV and JSON formats.  
+CSV output handy to compare line by line, while JSON can show the type difference (null vs empty string, 1 as number and 1 as string, etc.)
 
 ## Known Limitations
 
