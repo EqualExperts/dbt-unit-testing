@@ -275,6 +275,15 @@ Note: Strategy names are case insensitive
 
 Good test feedback is what allows us to be productive when developing unit tests and developing our models.
 The test macro provides visual feedback when a test fails showing what went wrong by comparing the lines of the expectations with the actuals.
+To make the feedback even more readable you can provide `primary_key` in parameters specying the field to sort by:  
+```jinja
+{% call dbt_unit_testing.test('some_model', 'smoke test', {"primary_key": "business_id"}) %}
+
+  ...
+  
+{% endcall %}
+```
+The result will be displayed the way to conveniently compare 2 adjacent lines  
 
 ##### Example
 
