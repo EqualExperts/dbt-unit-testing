@@ -245,7 +245,7 @@ You can specify the mocking strategy in the dbt_project.yml file, like this:
 ```yaml
 vars:
   unit_tests_config:
-    mocking_stategy: Full
+    mocking_strategy: Full
 ```
 
 You can also specify a different mocking strategy for a specific model in the test, like this:
