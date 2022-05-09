@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: dbt_unit_testing
+    tables:
+      - name: sub_package_sample_source
+        columns:
+          - name: a
+            data_type: integer
+          - name: b

@@ -13,5 +13,16 @@ sources:
         columns:
           - name: example
             data_type: integer
+        quoting:
+          identifier: true
       - name: sample_source_name
         identifier: sample_source_identifier
+      - name: multi_schema
+        columns:
+          - name: name
+
+  - name: dbt_unit_testing_2
+    tables:
+      - name: multi_schema
+        columns:
+          - name: name

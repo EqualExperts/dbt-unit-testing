@@ -1,5 +1,14 @@
 {% macro test(model_name, test_description, options={}) %}
-    {{ dbt_unit_testing._test(model_name, test_description, caller(), options)}}
+  {{ dbt_unit_testing.ref_tested_model(model_name) }}
+  {{ dbt_unit_testing._test(model_name, test_description, caller(), options)}}
+{% endmacro %}
+
+{% macro ref_tested_model(model_name) %}
+  {% set ref_tested_model %}
+    -- We add an (unused) reference to the tested model,
+    -- so that DBT includes the model as a dependency of the test in the DAG
+    select * from {{ ref(model_name) }}
+  {% endset %}
 {% endmacro %}
 
 {% macro _test(model_name, test_description, test_info, options={}) %}
@@ -28,7 +37,7 @@
 
 {% macro source(source, model_name) %}
   {%- if 'unit-test' in config.get('tags') -%}
-      {{ dbt_unit_testing.quote_identifier(model_name) }}
+      {{ dbt_unit_testing.quote_identifier(source ~ "__" ~ model_name) }}
   {%- else -%}
       {{ return (builtins.source(source, model_name)) }}
   {%- endif -%}
@@ -68,26 +77,32 @@
     {% set input_columns = dbt_unit_testing.extract_columns_list(input_values_sql) %}
     {% set extra_columns = dbt_unit_testing.extract_columns_difference(model_columns, input_columns) %}
 
-    {%- set input_sql_with_all_columns -%}
-      select * from ({{input_values_sql}}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_1')}}
-
-      {% if extra_columns %}
-        {% if mocking_strategy.simplified %}
+    {% set input_sql_with_all_columns %}
+      select * from (
+        {{input_values_sql}}
+      ) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_1')}}
+      {%- if extra_columns -%}
+        {%- if mocking_strategy.simplified -%}
           {% set null_extra_columns = [] %}
           {% for c in extra_columns %}
             {% set null_extra_columns = null_extra_columns.append("null as " ~ c) %}
           {% endfor %}
           left join (select {{ null_extra_columns | join (",")}}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_3') }} on false
-        {% else %}
+        {%- else -%}
           {% set simple_node_sql = dbt_unit_testing.build_node_sql(model_node, {"fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW' }) %}
             left join (select {{ extra_columns | join (",")}}
                       from ({{ simple_node_sql }}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_2') }}) as {{ dbt_unit_testing.quote_identifier(model_name ~ '_tmp_3') }} on false
-        {% endif %}
-      {% endif %}
-
+        {%- endif -%}
+      {%- endif -%}
     {%- endset -%}
 
-    {% set input_as_json = '"' ~ model_name  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' %}
+    {%- if source_name == '' -%}
+      {%- set model_key = model_name -%}
+    {%- else -%}
+      {%- set model_key = [source_name, model_name]|join('__') -%}
+    {%- endif -%}
+
+    {% set input_as_json = '"' ~ model_key  ~ '": "' ~ dbt_unit_testing.sql_encode(input_sql_with_all_columns) ~ '",' %}
     {{ return (input_as_json) }}
   {% endif %}
 {% endmacro %}
@@ -118,13 +133,15 @@
   {% endset %}
 
   {%- set test_query -%}
-    with
-  
-    expectations as ({{ expectations_query }}),
-    actual as ({{ actual_query }}),
+    with expectations as (
+      {{ expectations_query }}
+    ),
+    actual as (
+      {{ actual_query }}
+    ),
 
     extra_entries as (
-    select '+' as diff, {{columns}} from actual 
+    select '+' as diff, {{columns}} from actual
     {{ dbt_utils.except() }}
     select '+' as diff, {{columns}} from expectations),
 
@@ -132,12 +149,11 @@
     select '-' as diff, {{columns}} from expectations
     {{ dbt_utils.except() }}
     select '-' as diff, {{columns}} from actual)
-    
+
     select * from extra_entries
     UNION ALL
     select * from missing_entries
-
-  {% endset %}
+  {%- endset -%}
 
   {% if execute %}
     {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
@@ -146,10 +162,16 @@
       {{ dbt_unit_testing.debug(test_query) }}
     {% endif %}
 
-    {% set r1 = run_query("select count(1) from (" ~ expectations_query ~ ") as t") %}
+    {%- set count_query -%}
+      select * FROM (select count(1) as expectation_count from (
+          {{ expectations_query }}
+        ) as exp) as exp_count, (select count(1) as actual_count from (
+          {{ actual_query }}
+        ) as act) as act_count
+    {%- endset -%}
+    {% set r1 = run_query(count_query) %}
     {% set expectations_row_count = r1.columns[0].values() | first %}
-    {% set r2 = run_query("select count(1) from (" ~ actual_query ~ ") as t") %}
-    {% set actual_row_count = r2.columns[0].values() | first %}
+    {% set actual_row_count = r1.columns[1].values() | first %}
 
     {% set results = run_query(test_query) %}
     {% set results_length = results.rows | length %}
@@ -166,6 +188,11 @@
         {% do results.print_table(max_columns=None, max_column_width=30) %}
       {% endif %}
     {% endif %}
-    select 1 from (select 1) as t where {{ failed }}
+    (
+      with test_query as (
+        {{ test_query }}
+      )
+      select 1 from (select 1) as t where {{ failed }}
+    )
   {% endif %}
 {% endmacro %}
