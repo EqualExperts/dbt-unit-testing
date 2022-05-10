@@ -149,15 +149,13 @@
     select '-' as diff, {{columns}} from expectations
     {{ dbt_utils.except() }}
     select '-' as diff, {{columns}} from actual)
-
-    {% if options.get("primary_key", '') | length > 0 %}
-    select * from ( 
-    {% endif %}
-      select * from extra_entries
-      UNION ALL
-      select * from missing_entries
-    {% if options.get("primary_key", '') | length > 0 %}
-    ) order by {{options.get("primary_key", '')}}
+    
+    select * from extra_entries
+    UNION ALL
+    select * from missing_entries
+    {% set sort_field = options.get("output_sort_field") %}
+    {% if sort_field %}
+    ORDER BY {{ sort_field }}
     {% endif %}
   {%- endset -%}
 
