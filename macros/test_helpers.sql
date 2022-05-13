@@ -9,7 +9,7 @@
 {% endmacro %}
 
 {% macro extract_columns_difference(cl1, cl2) %}
-  {% set columns = cl1 | list | reject('in', cl2) | list %}
+  {% set columns = cl1 | map('lower') | list | reject('in', cl2 | map('lower') | list) | list %}
   {{ return(columns) }}
 {% endmacro %}
 

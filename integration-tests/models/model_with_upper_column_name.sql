@@ -1,0 +1,1 @@
+select *, 1 as "UPPER_CASE_COLUMN" from {{ dbt_unit_testing.ref('model_a') }} where a >=1
