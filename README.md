@@ -194,7 +194,7 @@ Alternatively, if you prefer to keep using the standard `ref` macro in the model
 {% endmacro %}
 ```
 
-Also, the sources columns must be available. If sources are not present in the database,  you have to declare them in your sources file. Example:
+Also, depending on your Mocking Strategy, the sources columns must be available in configuration. If sources are not present in the database, you have to declare them in your sources file. Example:
 
 ```yaml
 sources:
@@ -226,19 +226,38 @@ sources:
 
 ### Mocking strategy
 
-In some environments (particularly BigQuery), you may find that you need to reduce query complexity. There are three levels of complexity that you can specify when running tests, in decreasing order of complexity:
+When you are creating a mock for a unit test, usually you will not need all the mocked columns for a specific test, you should be testing just small pice of logic (unit) of the model. Although to be able to compile the model with the mock, you need to ensure you have all the required columns in the mock:
+```
+  {% call dbt_unit_testing.mock_ref ('[Model to Mock]') %}
+     select 'some_value' as colum_to_test,
+     '' as required_ignored_column_in_this_test,
+     '' as required_ignored_column_2_in_this_test,
+     null as required_ignored_column_3_in_this_test
+  {% endcall %}
+```
 
+To improve the readability of the tests, the clarity and the development workflow the framework can inspect your documentation or your database and create this boilerplate for you. It comes with a price, increasing the test execution time by making extra db calls or more complex queries.
+
+There is a configurable Mocking Strategy setting that you can use and decide if you prefer to have clear/friendly tests or faster and simpler tests.
+
+The available Mocking Strategies are the following:
+
+- *`Pure`*
 - *`Full`*
 - *`Simplified`*
 - *`Database`*
 
-The *`Full`* strategy provides the best developer experience by mocking all the models with the SQL that's on each model's file. There is no need to materialize the models in the database to run the tests. It can also infer the types of all the columns that are not used in a mocked model, preventing some type mismatches when running the tests.
+The *`Pure`* strategy provides the fastest test execution, you'll need to have the required columns in the mocks, although it's the faster and simpler strategy.
 
-The *`Simplified`* strategy builds less complex test queries but it doesn't infer the types of the columns as the `Full` strategy does. This means that sometimes you need to declare the type of a column in the mocking sql, even if you don't need that column in the test.
+The *`Full`* strategy provides the best developer experience by mocking all the models with the SQL that's on each model's file. There is no need to materialize the models in the database to run the tests, if you have the models, sources and seeds documented with column information. It can also infer the types of all the columns that are not used in a mocked model, preventing some type mismatches when running the tests.
+
+In some environments (particularly BigQuery), you may need to reduce query complexity or the number of db calls. There are reduced levels of complexity that you can specify when running tests, in decreasing order of complexity:
+
+The *`Simplified`* strategy builds less complex test queries but it doesn't infer the types of the columns as the `Full` strategy does. This means that sometimes you need to declare the column type in the mocking sql, even if you don't need that column in the test.
 
 The *`Database`* strategy generates the most simple queries because it uses the models in the database. This requires that all the models used by the model being tested must be previously materialized in the database (the only exception being the model being tested, which will always use the SQL from its file).
 Another downside of this strategy is that you can only mock the immediate parents of the model being tested. If you have a model hierarchy like A->B->C, for instance, you have to mock model B to test model A, you cannot mock model C (the other strategies allow this).
-Furthermore, you need to ensure that the models in the database contain no rows, otherwise, the tests could be affected by them.
+Furthermore, you need to ensure that the models in the database contain no rows. Otherwise, the tests could be affected by them.
 
 You can specify the mocking strategy in the dbt_project.yml file, like this:
 
