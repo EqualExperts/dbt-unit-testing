@@ -90,11 +90,12 @@
 
 {% macro get_mocking_strategy(options) %}
   {% set mocking_strategy = options.get("mocking_strategy", dbt_unit_testing.get_config("mocking_strategy", 'FULL')) %}
-  {% if mocking_strategy | upper not in ['FULL', 'SIMPLIFIED', 'DATABASE']%}
+  {% if mocking_strategy | upper not in ['FULL', 'SIMPLIFIED', 'DATABASE', 'PURE']%}
     {{ exceptions.raise_compiler_error("Invalid mocking strategy: " ~ mocking_strategy) }}
   {% endif%}
   {% set full = mocking_strategy | upper == 'FULL' %}
   {% set simplified = mocking_strategy | upper == 'SIMPLIFIED' %}
   {% set database = mocking_strategy | upper == 'DATABASE' %}
-  {{ return ({"full": full, "simplified": simplified, "database": database}) }}
+  {% set pure = mocking_strategy | upper == 'PURE' %}
+  {{ return ({"full": full, "simplified": simplified, "database": database, "pure": pure}) }}
 {% endmacro %}
