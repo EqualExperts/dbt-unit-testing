@@ -1,3 +1,15 @@
+{% macro build_input_values_sql(input_values, options) %}
+    {% set input_format = options.get("input_format", dbt_unit_testing.get_config("input_format", "sql")) %}
+
+    {% set input_values_sql = input_values %}
+
+    {% if input_format == "csv" %}
+      {% set input_values_sql = dbt_unit_testing.sql_from_csv_input(input_values, options) %}
+    {%- endif -%}
+
+    {{ return (input_values_sql) }}
+{% endmacro %}
+
 {% macro sql_from_csv(options={}) %}
   {{ return (sql_from_csv_input(caller(), options)) }}
 {% endmacro %}
