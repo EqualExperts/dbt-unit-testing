@@ -267,12 +267,12 @@ vars:
     mocking_strategy: Full
 ```
 
-You can also specify a different mocking strategy for a specific model in the test, like this:
+You can also specify a different mocking strategy for a specific test, like this:
 
 ```jinja
-{% call dbt_unit_testing.test('some_model') %}
+{% call dbt_unit_testing.test('some_model', {"mocking_strategy": "Pure"} ) %}
 
-  {% call dbt_unit_testing.mock_ref('some_model_to_be_mocked', {"mocking_strategy": "SIMPLIFIED"} ) %}
+  {% call dbt_unit_testing.mock_ref('some_model_to_be_mocked', {"mocking_strategy": "Pure"} ) %}
     select 1 as t
   {% endcall %}
 
@@ -280,8 +280,8 @@ You can also specify a different mocking strategy for a specific model in the te
 
 {% endcall %}
 ```
-
-All the mocked models in the other tests will use the mocking strategy declared in dbt_project.yml file (or `FULL`, if none is specified), but this particular model in this test will use the `SIMPLIFIED` strategy. This can be useful if you want to use the power of the `FULL` strategy in all models except for the ones that increase the complexity of the final SQL.
+Note that you need to add the mocking strategy at the test macro and on the following mocks. 
+All the tests will use the mocking strategy declared in dbt_project.yml file (or `FULL`, if none is specified), but this particular test will use the `Pure` strategy. This can be useful if you want to use the power of the `FULL` strategy in all tests except for the ones that increase the complexity of the final SQL or that you don't have documentation the framework can rely.
 
 Note: Strategy names are case insensitive
 
