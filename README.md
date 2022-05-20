@@ -280,10 +280,10 @@ You can also specify a different mocking strategy for a specific test, like this
 
 {% endcall %}
 ```
-Note that you need to add the mocking strategy at the test macro and on the following mocks. 
+Notes:
+-  You need to add the mocking strategy at the test macro and on the following mocks. 
 All the tests will use the mocking strategy declared in dbt_project.yml file (or `FULL`, if none is specified), but this particular test will use the `Pure` strategy. This can be useful if you want to use the power of the `FULL` strategy in all tests except for the ones that increase the complexity of the final SQL or that you don't have documentation the framework can rely.
-
-Note: Strategy names are case insensitive
+- Strategy names are case insensitive
 
 ### Convenience features
 
