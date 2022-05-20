@@ -1,0 +1,12 @@
+jaffle_shop:
+  target: postgres
+  outputs:
+    postgres:
+      type: postgres
+      host: localhost
+      user: postgres
+      pass: postgres
+      port: 5432
+      schema: dbt_unit_testing_jaffle_shop
+      dbname: postgres
+      threads: 1
