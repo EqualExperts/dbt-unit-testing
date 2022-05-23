@@ -110,6 +110,7 @@ jobs:
         pr-integration-tests-snowflake,
         pr-integration-tests-bigquery,
         pr-integration-tests-postgres,
+        pr-jaffle-shop-tests-postgres
       ]
     environment: test
 
@@ -127,13 +128,15 @@ jobs:
         pr-integration-tests-snowflake,
         pr-integration-tests-bigquery,
         pr-integration-tests-postgres,
+        pr-jaffle-shop-tests-postgres
       ]
     environment: test
     if: | 
       always() && 
       (needs.pr-integration-tests-snowflake.result == 'skipped' ||
        needs.pr-integration-tests-bigquery.result == 'skipped' || 
-       needs.pr-integration-tests-postgres.result == 'skipped')
+       needs.pr-integration-tests-postgres.result == 'skipped' ||
+       needs.pr-jaffle-shop-tests-postgres.result == 'skipped')
     steps:
       - name: Check for skipped integration tests
         uses: actions/github-script@v3
