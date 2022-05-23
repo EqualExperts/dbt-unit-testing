@@ -17,8 +17,8 @@ Using the described seeds, there's a [staging layer](./models/staging/) composed
 To illustrate how you can do unit testing using the dbt-unit-testing framework, there is a test suite that you can inspect. We've created 3 different files that corresponds to the same test suite, but with different mocking strategies. If you're not familiar with mocking strategies please check the (../README.md).
 
 - [Tests using full mocking strategy](./tests/unit/tests_using_full_mocking_strategy_and_sql_input.sql)
-- [Tests using simplified mocking strategy](./tests/unit/tests_using_full_mocking_strategy_and_sql_input.sql)
-- [Tests using pure mocking strategy](./tests/unit/tests_using_full_mocking_strategy_and_sql_input.sql) 
+- [Tests using simplified mocking strategy](./tests/unit/tests_using_simplified_mocking_strategy_and_sql_input.sql)
+- [Tests using pure mocking strategy](./tests/unit/tests_using_pure_mocking_strategy_and_sql_input.sql) 
   
 Inside each test file there are exatly **the same tests** so you can compare the pure strategy (simplest) with more helpfull strategies Full/Simplified. 
 
