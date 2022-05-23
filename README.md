@@ -131,7 +131,7 @@ The following test is based on dbt's jaffle-shop:
 {% endcall %}
 
 ```
-There's a jaffle-shop example enriched with unit tests [here](./jaffle-sop/)
+There's a jaffle-shop example enriched with unit tests [here](/jaffle-shop/)
 ### Different ways to build mock values
 
 Instead of using standard sql to define your input values, you can use a more tabular way, like this:
@@ -326,7 +326,7 @@ All the tests will use the mocking strategy declared in dbt_project.yml file (or
 
 ### Convenience features
 
-- You can define multiple tests in the same file using `UNION ALL` [here](integration-tests/tests/unit/transform/covid_19_cases_per_day_test.sql).
+- You can define multiple tests in the same file using `UNION ALL` [here](jaffle-shop/tests/unit/tests_using_full_mocking_strategy_and_sql_input.sql).
 - When mocking a ref or a model you just need to define the columns that you will test.
 
 #### Test Feedback
