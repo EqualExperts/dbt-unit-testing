@@ -5,7 +5,7 @@ services:
     image: python:3.8.5
     environment:
       - GOOGLE_CLOUD_PROJECT
-    entrypoint: "/repo/run_test.sh ${TARGET}"
+    entrypoint: "${RUN_SCRIPT} ${TARGET}"
     working_dir: /repo
     volumes:
         - ".:/repo"

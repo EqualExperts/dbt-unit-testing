@@ -1,0 +1,23 @@
+version: 2
+
+seeds:
+  - name: raw_customers
+    config:
+      column_types:
+        id: numeric
+        first_name: text
+        last_name: text
+  - name: raw_orders
+    config:
+      column_types:
+        id: numeric
+        user_id: numeric
+        order_date: timestamp
+        status: text
+  - name: raw_payments
+    config:
+      column_types:
+        id: numeric
+        order_id: numeric
+        payment_method: text
+        amount: numeric

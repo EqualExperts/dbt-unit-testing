@@ -74,6 +74,34 @@ jobs:
       - name: test postgres
         run: ./run_test.sh postgres
 
+  pr-jaffle-shop-tests-postgres:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
+    environment: test
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: "actions/checkout@v2"
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: test postgres
+        run: ./run_test_jaffle_shop.sh postgres
+
   remove-safe-to-test-label-after-test-run:
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -82,6 +110,7 @@ jobs:
         pr-integration-tests-snowflake,
         pr-integration-tests-bigquery,
         pr-integration-tests-postgres,
+        pr-jaffle-shop-tests-postgres
       ]
     environment: test
 
@@ -99,13 +128,15 @@ jobs:
         pr-integration-tests-snowflake,
         pr-integration-tests-bigquery,
         pr-integration-tests-postgres,
+        pr-jaffle-shop-tests-postgres
       ]
     environment: test
     if: | 
       always() && 
       (needs.pr-integration-tests-snowflake.result == 'skipped' ||
        needs.pr-integration-tests-bigquery.result == 'skipped' || 
-       needs.pr-integration-tests-postgres.result == 'skipped')
+       needs.pr-integration-tests-postgres.result == 'skipped' ||
+       needs.pr-jaffle-shop-tests-postgres.result == 'skipped')
     steps:
       - name: Check for skipped integration tests
         uses: actions/github-script@v3
