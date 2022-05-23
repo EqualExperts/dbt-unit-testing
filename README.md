@@ -131,7 +131,7 @@ The following test is based on dbt's jaffle-shop:
 {% endcall %}
 
 ```
-There's a jaffle-shop example enriched with unit tests [here](jaffle-sop/)
+There's a jaffle-shop example enriched with unit tests [here](./jaffle-sop/)
 ### Different ways to build mock values
 
 Instead of using standard sql to define your input values, you can use a more tabular way, like this:
