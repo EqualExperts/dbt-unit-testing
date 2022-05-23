@@ -107,22 +107,22 @@ The following test is based on dbt's jaffle-shop:
 ```jinja
 {{ config(tags=['unit-test']) }}
 
-{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value', options) %}
+{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value') %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
+  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
     select 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_orders', options) %}
-    select 1 as order_id, 1 as customer_id
+  {% call dbt_unit_testing.mock_ref ('stg_orders') %}
+    select 1001 as order_id, 1 as customer_id
     UNION ALL
-    select 2 as order_id, 1 as customer_id
+    select 1002 as order_id, 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_payments', options) %}
-    select 1 as order_id, 10 as amount
+  {% call dbt_unit_testing.mock_ref ('stg_payments') %}
+    select 1001 as order_id, 10 as amount
     UNION ALL
-    select 2 as order_id, 10 as amount
+    select 1002 as order_id, 10 as amount
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
@@ -137,28 +137,28 @@ There's a jaffle-shop example enriched with unit tests [here](/jaffle-shop/)
 Instead of using standard sql to define your input values, you can use a more tabular way, like this:
 
 ```jinja
-{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value', options) %}
+{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', {"input_format": "csv"}) %}
-      customer_id
-      1
+    customer_id
+    1
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_orders', {"input_format": "csv"}) %}
     order_id,customer_id
-    1,1
-    2,1
+    1001,1
+    1002,1
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments', {"input_format": "csv"}) %}
     order_id,amount
-    1,10
-    2,10
+    1001,10
+    1002,10
   {% endcall %}
 
   {% call dbt_unit_testing.expect({"input_format": "csv"}) %}
-   customer_id,customer_lifetime_value
-   1,20
+    customer_id,customer_lifetime_value
+    1,20
   {% endcall %}
 {% endcall %}
 
@@ -187,7 +187,7 @@ vars:
 With the above configuration you could write your tests like this:
 
 ```jinja
-{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value', options) %}
+{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', {"input_format": "csv"}) %}
     customer_id

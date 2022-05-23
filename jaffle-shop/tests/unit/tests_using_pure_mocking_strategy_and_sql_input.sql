@@ -38,15 +38,15 @@ UNION ALL
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_orders') %}
-    select 1 as order_id, 1 as customer_id, null as order_date
+    select 1001 as order_id, 1 as customer_id, null as order_date
     UNION ALL
-    select 2 as order_id, 1 as customer_id, null as order_date
+    select 1002 as order_id, 1 as customer_id, null as order_date
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments') %}
-    select 1 as order_id, 10 as amount
+    select 1001 as order_id, 10 as amount
     UNION ALL
-    select 2 as order_id, 10 as amount
+    select 1002 as order_id, 10 as amount
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
@@ -63,15 +63,15 @@ UNION ALL
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_orders') %}
-    select 1 as order_id, 1 as customer_id, null as order_date
+    select 1001 as order_id, 1 as customer_id, null as order_date
     UNION ALL
-    select 2 as order_id, 1 as customer_id, null as order_date
+    select 1002 as order_id, 1 as customer_id, null as order_date
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments') %}
-    select 1 as order_id, 0 as amount
+    select 1001 as order_id, 0 as amount
     UNION ALL
-    select 2 as order_id, 0 as amount
+    select 1002 as order_id, 0 as amount
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
@@ -88,15 +88,15 @@ UNION ALL
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_orders') %}
-    select 1 as order_id, 1 as customer_id, '2020-10-01'::Timestamp as order_date
+    select 1001 as order_id, 1 as customer_id, '2020-10-01'::Timestamp as order_date
     UNION ALL
-    select 2 as order_id, 1 as customer_id, '2021-01-02'::Timestamp as order_date
+    select 1002 as order_id, 1 as customer_id, '2021-01-02'::Timestamp as order_date
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments') %}
-    select 1 as order_id, 0 as amount
+    select 1001 as order_id, 0 as amount
     UNION ALL
-    select 2 as order_id, 0 as amount
+    select 1002 as order_id, 0 as amount
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
@@ -113,15 +113,15 @@ UNION ALL
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_orders') %}
-    select 1 as order_id, 1 as customer_id, '2020-10-01'::Timestamp as order_date
+    select 1001 as order_id, 1 as customer_id, '2020-10-01'::Timestamp as order_date
     UNION ALL
-    select 2 as order_id, 1 as customer_id, '2021-01-02'::Timestamp as order_date
+    select 1002 as order_id, 1 as customer_id, '2021-01-02'::Timestamp as order_date
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments') %}
-    select 1 as order_id, 0 as amount
+    select 1001 as order_id, 0 as amount
     UNION ALL
-    select 2 as order_id, 0 as amount
+    select 1002 as order_id, 0 as amount
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
