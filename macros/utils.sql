@@ -1,11 +1,7 @@
 {% macro extract_columns_list(query) %}
-  {% if execute %}
-    {% set results = run_query(query) %}
-    {% set columns = results.columns | map(attribute='name') | list %}
-    {{ return (columns) }}
-  {% else %}
-    {{ return([]) }}
-  {% endif %}
+  {% set results = run_query(query) %}
+  {% set columns = results.columns | map(attribute='name') | list %}
+  {{ return (columns) }}
 {% endmacro %}
 
 {% macro extract_columns_difference(cl1, cl2) %}
@@ -18,7 +14,6 @@
   {{ return (columns) }}
 {% endmacro %}
 
-
 {% macro sql_encode(s) %}
   {{ return (s.replace('"', '####_quote_####').replace('\n', '####_cr_####').replace('\t', '####_tab_####')) }}
 {% endmacro %}
@@ -27,8 +22,10 @@
   {{ return (s.replace('####_quote_####', '"').replace('####_cr_####', '\n').replace('####_tab_####', '\t')) -}}
 {% endmacro %}
 
-{% macro log_info(s) %}
-  {% do log (s, info=true) %}
+{% macro log_info(s, only_on_execute=false) %}
+  {% if not only_on_execute or execute %}
+    {% do log (s, info=true) %}
+  {% endif  %}
 {% endmacro %}
 
 {% macro debug(s) %}
@@ -46,40 +43,43 @@
 {% endmacro %}
 
 {% macro node_by_id (node_id) %}]
-  {% if execute %}
-    {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
-  {% endif %}
+  {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
+{% endmacro %}
+
+{% macro graph_node_by_prefix (prefix, name) %}
+  {{ return (graph.nodes[prefix ~ "." ~ model.package_name ~ "." ~ name])}}
 {% endmacro %}
 
 {% macro model_node (model_name) %}
-  {% set package_name = model.package_name %}
-  {% if execute %}
-    {% set node = graph.nodes["model." ~ package_name ~ "." ~ model_name] %}
-    {% if not node %}
-      {% set node = graph.nodes["snapshot." ~ package_name ~ "." ~ model_name] %}
-      {% if not node %}
-        {% set node = graph.nodes["seed." ~ package_name ~ "." ~ model_name] %}
-         {% if not node %}
-           {{ exceptions.raise_compiler_error("Node "  ~ package_name ~ "." ~ model_name ~ " not found.") }}
-         {% endif %}
-      {% endif %}
-    {% endif %}
-    {{ return (node) }}
+  {{ return (nil | default(dbt_unit_testing.graph_node_by_prefix("model", model_name))
+                 | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name)) 
+                 | default(dbt_unit_testing.graph_node_by_prefix("seed", model_name)))}}
+  {% if not node %}
+    {{ exceptions.raise_compiler_error("Node "  ~ package_name ~ "." ~ model_name ~ " not found.") }}
   {% endif %}
+  {{ return (node) }}
 {% endmacro %}
 
-{% macro source_node (source_name, model_name) %}
-  {% if execute %}
-    {{ return (graph.sources["source." ~ model.package_name ~ "." ~ source_name ~ "." ~ model_name]) }}
-  {% endif %}
+{% macro source_node(source_name, model_name) %}
+  {{ return (graph.sources["source." ~ model.package_name ~ "." ~ source_name ~ "." ~ model_name]) }}
 {% endmacro %}
 
-{% macro graph_node (source_name, model_name) %}
+{% macro graph_node(source_name, model_name) %}
   {% if source_name %}
     {{ return (dbt_unit_testing.source_node(source_name, model_name)) }}
   {% else %}
     {{ return (dbt_unit_testing.model_node(model_name)) }}
   {% endif  %}
+{% endmacro %}
+
+{% macro merge_jsons(jsons) %}
+  {% set json = {} %}
+  {% for j in jsons %}
+    {% for k,v in j.items() %}
+      {% do json.update({k: v}) %}
+    {% endfor %}
+  {% endfor %}
+  {{ return (json) }}
 {% endmacro %}
 
 {% macro get_config(config_name, default_value) %}
@@ -88,16 +88,10 @@
   {{ return (unit_tests_config.get(config_name, default_value))}}
 {% endmacro %}
 
-{% macro get_mocking_strategy(options) %}
-  {% set mocking_strategy = options.get("mocking_strategy", dbt_unit_testing.get_config("mocking_strategy", 'FULL')) %}
-  {% if mocking_strategy | upper not in ['FULL', 'SIMPLIFIED', 'DATABASE', 'PURE']%}
-    {{ exceptions.raise_compiler_error("Invalid mocking strategy: " ~ mocking_strategy) }}
-  {% endif%}
-  {% set full = mocking_strategy | upper == 'FULL' %}
-  {% set simplified = mocking_strategy | upper == 'SIMPLIFIED' %}
-  {% set database = mocking_strategy | upper == 'DATABASE' %}
-  {% set pure = mocking_strategy | upper == 'PURE' %}
-  {{ return ({"full": full, "simplified": simplified, "database": database, "pure": pure}) }}
+{% macro merge_configs(configs) %}
+  {% set unit_tests_config = var("unit_tests_config", {}) %}
+  {% set unit_tests_config = {} if unit_tests_config is none else unit_tests_config %}
+  {{ return (dbt_unit_testing.merge_jsons([unit_tests_config] + configs)) }}
 {% endmacro %}
 
 {% macro quote_identifier(identifier) %}

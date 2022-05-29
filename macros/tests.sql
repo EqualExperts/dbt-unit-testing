@@ -1,71 +1,79 @@
 {% macro test(model_name, test_description, options={}) %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
-  {{ dbt_unit_testing._test(model_name, test_description, caller(), options)}}
+
+  {% if execute %}
+    {% set test_configuration = {
+      "model_name": model_name, 
+      "description": test_description, 
+      "options": options} 
+    %}
+    {% set mocks_and_expectations_json_str = caller() %}
+    
+    {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
+    {% set test_report = dbt_unit_testing.build_test_report(test_configuration) %}
+
+    {% if not test_report.succeeded %}
+      {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
+    {% endif %}
+    
+    select 1 from (select 1) as t where {{ not test_report.succeeded }}
+  {% endif %}
 {% endmacro %}
 
-{% macro ref_tested_model(model_name) %}
-  {% set ref_tested_model %}
-    -- We add an (unused) reference to the tested model,
-    -- so that DBT includes the model as a dependency of the test in the DAG
-    select * from {{ ref(model_name) }}
-  {% endset %}
-{% endmacro %}
+{% macro build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str) %}
+    {% set mocks_and_expectations = dbt_unit_testing.split_json_str(mocks_and_expectations_json_str) %}
 
-{% macro _test(model_name, test_description, test_info, options={}) %}
-    {% set test_description = test_description | default('(no description)') %}
-    {% set test_info = test_info | trim %}
-    {% set test_info_last_comma_removed = test_info[:-1] %}
-    {% set test_info_json = fromjson('{' ~ test_info_last_comma_removed ~ '}') %}
-
-    {% for k, v in test_info_json.items() %}
-      {% set dummy = test_info_json.update({k: dbt_unit_testing.sql_decode(v)}) %}
+    {% for mock_or_expectation in mocks_and_expectations %}
+      {% do mock_or_expectation.update( {"options": dbt_unit_testing.merge_configs([test_configuration.options, mock_or_expectation.options])}) %}
+      {% set input_values = dbt_unit_testing.build_input_values_sql(mock_or_expectation.input_values, mock_or_expectation.options) %}
+      {% do mock_or_expectation.update({"input_values": input_values}) %}
     {% endfor %}
 
-    {% set expectations = test_info_json['__EXPECTATIONS__'] %}
-    {% set dummy = test_info_json.pop('__EXPECTATIONS__') %}
+    {% set mocks = mocks_and_expectations | selectattr("type", "==", "mock") | list %}
+    {% set expectations = mocks_and_expectations | selectattr("type", "==", "expectations") | first %}
 
-    {{ dbt_unit_testing.run_test(model_name, test_description, test_info_json, expectations, options)}}
+    {% for mock in mocks %}
+      {% do mock.update({"unique_id": dbt_unit_testing.graph_node(mock.source_name, mock.name).unique_id}) %}
+      {% if mock.options.include_extra_columns %}
+        {% do dbt_unit_testing.enrich_mock_sql_with_extra_columns(mock) %}
+      {% endif %}
+    {% endfor %}
+
+    {% set mocks_and_expectations_json = {
+      "mocks": mocks,
+      "expectations": expectations
+      }
+    %}
+
+    {{ return (mocks_and_expectations_json) }}
 {% endmacro %}
 
-{% macro ref(model_name) %}
-  {%- if 'unit-test' in config.get('tags') -%}
-      {{ dbt_unit_testing.quote_identifier(model_name) }}
-  {%- else -%}
-      {{ return (builtins.ref(model_name)) }}
-  {%- endif -%}
+{% macro build_test_report(test_configuration) %}
+
+  {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
+  {% set test_report = dbt_unit_testing.run_test_query(test_configuration, test_queries) %}
+
+  {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
+    {{ dbt_unit_testing.debug("------------------------------------") }}
+    {{ dbt_unit_testing.debug("MODEL: " ~ test_configuration.model_name) }}
+    {{ dbt_unit_testing.debug(test_queries.test_query) }}
+  {% endif %}
+
+  {{ return (test_report) }}
 {% endmacro %}
 
-{% macro source(source, model_name) %}
-  {%- if 'unit-test' in config.get('tags') -%}
-      {{ dbt_unit_testing.quote_identifier(source ~ "__" ~ model_name) }}
-  {%- else -%}
-      {{ return (builtins.source(source, model_name)) }}
-  {%- endif -%}
-{% endmacro %}
-
-{% macro expect(options={}) %}
-    {%- set model_sql = dbt_unit_testing.build_input_values_sql(caller(), options) -%}
-    {%- set input_as_json = '"__EXPECTATIONS__": "' ~ dbt_unit_testing.sql_encode(model_sql) ~ '",' -%}
-    {{ return (input_as_json) }}
-{% endmacro %}
-
-{% macro run_test(model_name, test_description, mocked_models, expectations, options) %}
-  {% set hide_errors = options.get("hide_errors", false) %}
-  {% set mocking_strategy = dbt_unit_testing.get_mocking_strategy(options) %}
-
-  {% set model_node = dbt_unit_testing.model_node(model_name) %}
-  {% set sql_options = { "fetch_mode": 'DATABASE' if mocking_strategy.database else 'RAW',
-                         "include_all_dependencies": mocking_strategy.full } %}
-
-  {% set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, mocked_models, sql_options) %}
-  {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations)) %}
+{% macro build_test_queries(test_configuration) %}
+  {% set expectations = test_configuration.expectations %}
+  {% set model_node = dbt_unit_testing.model_node(test_configuration.model_name) %}
+  {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks) -%}
+  {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
 
   {%- set actual_query -%}
     select {{columns}} from ( {{ model_complete_sql }} ) as s
   {% endset %}
 
   {%- set expectations_query -%}
-    select {{columns}} from ({{ expectations }}) as s
+    select {{columns}} from ({{ expectations.input_values }}) as s
   {% endset %}
 
   {%- set test_query -%}
@@ -89,50 +97,99 @@
     select * from extra_entries
     UNION ALL
     select * from missing_entries
-    {% set sort_field = options.get("output_sort_field") %}
+
+    {% set sort_field = test_configuration.options.get("output_sort_field") %}
     {% if sort_field %}
     ORDER BY {{ sort_field }}
     {% endif %}
   {%- endset -%}
 
-  {% if execute %}
-    {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
-      {{ dbt_unit_testing.debug("------------------------------------") }}
-      {{ dbt_unit_testing.debug("MODEL: " ~ model_name) }}
-      {{ dbt_unit_testing.debug(test_query) }}
-    {% endif %}
+  {% set test_queries = {
+    "actual_query": actual_query,
+    "expectations_query": expectations_query,
+    "test_query": test_query
+  } %}
 
-    {%- set count_query -%}
-      select * FROM (select count(1) as expectation_count from (
-          {{ expectations_query }}
-        ) as exp) as exp_count, (select count(1) as actual_count from (
-          {{ actual_query }}
-        ) as act) as act_count
-    {%- endset -%}
-    {% set r1 = run_query(count_query) %}
-    {% set expectations_row_count = r1.columns[0].values() | first %}
-    {% set actual_row_count = r1.columns[1].values() | first %}
+  {{ return (test_queries) }}
+{% endmacro %}
 
-    {% set results = run_query(test_query) %}
-    {% set results_length = results.rows | length %}
-    {% set failed = results_length > 0 or expectations_row_count != actual_row_count %}
+{% macro show_test_report(test_configuration, test_report) %}
+  {% set model_name = test_configuration.model_name %}
+  {% set test_description = test_configuration.description | default('(no description)') %}
 
-    {% if failed and not hide_errors %}
-      {%- do log('\x1b[31m' ~ 'MODEL: ' ~ model_name ~ '\x1b[0m', info=true) -%}
-      {%- do log('\x1b[31m' ~ 'TEST:  ' ~ test_description ~ '\x1b[0m', info=true) -%}
-      {% if expectations_row_count != actual_row_count %}
-        {%- do log('\x1b[31m' ~ 'Number of Rows do not match! (Expected: ' ~ expectations_row_count ~ ', Actual: ' ~ actual_row_count ~ ')' ~ '\x1b[0m', info=true) -%}
-      {% endif %}
-      {% if results_length > 0 %}
-        {%- do log('\x1b[31m' ~ 'Rows mismatch:' ~ '\x1b[0m', info=true) -%}
-        {% do results.print_table(max_columns=None, max_column_width=30) %}
-      {% endif %}
-    {% endif %}
-    (
-      with test_query as (
-        {{ test_query }}
-      )
-      select 1 from (select 1) as t where {{ failed }}
-    )
+  {%- do log('\x1b[31m' ~ 'MODEL: ' ~ '\x1b[33m' ~ model_name ~ '\x1b[0m', info=true) -%}
+  {%- do log('\x1b[31m' ~ 'TEST:  ' ~ '\x1b[33m' ~ test_description ~ '\x1b[0m', info=true) -%}
+  {% if expectations_row_count != actual_row_count %}
+    {%- do log('\x1b[31m' ~ 'ERROR: ' ~ '\x1b[33m' ~ 'Number of Rows do not match! (Expected: ' ~ test_report.expectations_row_count ~ ', Actual: ' ~ test_report.actual_row_count ~ ')' ~ '\x1b[0m', info=true) -%}
+  {% endif %}
+  {% if test_report.different_rows_count > 0 %}
+    {%- do log('\x1b[31m' ~ 'ERROR: ' ~ '\x1b[33m' ~ 'Rows mismatch:' ~ '\x1b[0m', info=true) -%}
+    {% do test_report.test_differences.print_table(max_columns=None, max_column_width=30) %}
   {% endif %}
 {% endmacro %}
+
+{% macro run_test_query(test_configuration, test_queries) %}
+  {% set model_name = test_configuration.model_name %}
+  {% set test_description = test_configuration.description %}
+  {% set actual_query = test_queries.actual_query %}
+  {% set expectations_query = test_queries.expectations_query %}
+  {% set test_query = test_queries.test_query %}
+
+  {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
+    {{ dbt_unit_testing.debug("------------------------------------") }}
+    {{ dbt_unit_testing.debug("MODEL: " ~ model_name) }}
+    {{ dbt_unit_testing.debug(test_query) }}
+  {% endif %}
+
+  {%- set count_query -%}
+    select * FROM 
+      (select count(1) as expectation_count from (
+        {{ expectations_query }}
+      ) as exp) as exp_count,
+      (select count(1) as actual_count from (
+        {{ actual_query }}
+      ) as act) as act_count
+  {%- endset -%}
+  {% set r1 = run_query(count_query) %}
+  {% set expectations_row_count = r1.columns[0].values() | first %}
+  {% set actual_row_count = r1.columns[1].values() | first %}
+
+  {% set test_differences = run_query(test_query) %}
+  {% set different_rows_count = test_differences.rows | length %}
+  {% set succeeded = different_rows_count == 0 and (expectations_row_count == actual_row_count) %}
+
+  {% set test_report = {
+    "expectations_row_count": expectations_row_count,
+    "actual_row_count": actual_row_count,
+    "different_rows_count": different_rows_count,
+    "test_differences": test_differences,
+    "succeeded": succeeded,
+  } %}
+  {{ return (test_report) }}
+
+{% endmacro %}
+
+{% macro ref(model_name) %}
+  {% if 'unit-test' in config.get('tags') %}
+      {{ return (dbt_unit_testing.ref_cte_name(model_name)) }}
+  {% else %}
+      {{ return (builtins.ref(model_name)) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro source(source, table_name) %}
+  {% if 'unit-test' in config.get('tags') %}
+      {{ return (dbt_unit_testing.source_cte_name(source, table_name)) }}
+  {% else %}
+      {{ return (builtins.source(source, table_name)) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro ref_tested_model(model_name) %}
+  {% set ref_tested_model %}
+    -- We add an (unused) reference to the tested model,
+    -- so that DBT includes the model as a dependency of the test in the DAG
+    select * from {{ ref(model_name) }}
+  {% endset %}
+{% endmacro %}
+
