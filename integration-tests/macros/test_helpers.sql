@@ -1,16 +1,19 @@
 {% macro test_should_fail (model_name, test_description) %}
-  {% set test_info = caller() %}
+  {% set mocks_and_expectations_json_str = caller() %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
   {% if execute %}
-    {% set query = dbt_unit_testing._test(model_name, test_description, test_info, {"hide_errors": true}) %}
-    {% set r1 = run_query(query) %}
-    {% set r1_count = r1.rows | length %}
+    {% set test_configuration = {
+      "model_name": model_name, 
+      "description": test_description, 
+      "options": {"hide_errors": true}} 
+    %}
 
-    {% set failed = r1_count > 0 %}
+    {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
+    {% set test_report = dbt_unit_testing.build_test_report(test_configuration) %}
 
-    {% if not failed %}
+    {% if test_report.succeeded %}
         {%- do log('\x1b[31m' ~ 'Test: "' ~ test_description ~ '" should have FAILED' ~ '\x1b[0m', info=true) -%}
     {% endif %}
-    select 1 from (select 1) as t where {{ not failed }}
+    select 1 from (select 1) as t where {{ test_report.succeeded }}
   {% endif %}
 {% endmacro %}

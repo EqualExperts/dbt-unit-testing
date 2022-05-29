@@ -1,17 +1,17 @@
 {{
     config(
-        tags=['unit-test']
+        tags=['unit-test', 'db-dependency']
     )
 }}
 
-{% set options = {"mocking_strategy": "SIMPLIFIED"}%}
+{% set options = {"include_extra_columns": true} %}
 
-{% call dbt_unit_testing.test('customers', 'should show customer_id without orders', options) %}
+{% call dbt_unit_testing.test('customers', 'should show customer_id without orders') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
     select 1 as customer_id
   {% endcall %}
-  
+
   {% call dbt_unit_testing.expect() %}
     select 1 as customer_id
   {% endcall %}
@@ -19,20 +19,20 @@
 
 UNION ALL
 
-{% call dbt_unit_testing.test('customers', 'should show customer name', options) %}
+{% call dbt_unit_testing.test('customers', 'should show customer name') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
-    select null::Numeric as customer_id, 'John' as first_name, 'Doe' as last_name
+    select 'John' as first_name, 'Doe' as last_name
   {% endcall %}
-  
+
   {% call dbt_unit_testing.expect() %}
-    select null::Numeric as customer_id, 'John' as first_name, 'Doe' as last_name
+    select 'John' as first_name, 'Doe' as last_name
   {% endcall %}
 {% endcall %}
 
 UNION ALL
 
-{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value', options) %}
+{% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
     select 1 as customer_id
@@ -58,7 +58,7 @@ UNION ALL
 
 UNION ALL
 
-{% call dbt_unit_testing.test('customers', 'should calculate the number of orders', options) %}
+{% call dbt_unit_testing.test('customers', 'should calculate the number of orders') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
     select 1 as customer_id
@@ -83,7 +83,7 @@ UNION ALL
 
 UNION ALL
 
-{% call dbt_unit_testing.test('customers', 'should calculate most recent order', options) %}
+{% call dbt_unit_testing.test('customers', 'should calculate most recent order') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
     select 1 as customer_id
@@ -96,9 +96,9 @@ UNION ALL
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments', options) %}
-    select 1001 as order_id, 0 as amount
+    select 1001 as order_id
     UNION ALL
-    select 1002 as order_id, 0 as amount
+    select 1002 as order_id
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
@@ -108,7 +108,7 @@ UNION ALL
 
 UNION ALL
 
-{% call dbt_unit_testing.test('customers', 'should calculate first order', options) %}
+{% call dbt_unit_testing.test('customers', 'should calculate first order') %}
   
   {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
     select 1 as customer_id
@@ -121,9 +121,9 @@ UNION ALL
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments', options) %}
-    select 1001 as order_id, 0 as amount
+    select 1001 as order_id
     UNION ALL
-    select 1002 as order_id, 0 as amount
+    select 1002 as order_id
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
