@@ -1,5 +1,5 @@
 {% macro extract_columns_list(query) %}
-  {% if execute %}
+  {% if execute and flags.WHICH == 'test' %}
     {% set results = run_query(query) %}
     {% set columns = results.columns | map(attribute='name') | list %}
     {{ return (columns) }}

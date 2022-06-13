@@ -95,7 +95,7 @@
     {% endif %}
   {%- endset -%}
 
-  {% if execute %}
+  {% if execute and flags.WHICH == 'test' %}
     {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
       {{ dbt_unit_testing.debug("------------------------------------") }}
       {{ dbt_unit_testing.debug("MODEL: " ~ model_name) }}
