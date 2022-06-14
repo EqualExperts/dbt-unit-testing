@@ -22,7 +22,7 @@
       {% else %}
         {% set sql = dbt_unit_testing.build_node_sql(node, options) %}
       {% endif %}
-      {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ sql ~ ")" %}
+      {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ sql ~ "\n)" %}
       {% set cte_dependencies = cte_dependencies.append(cte) %}
     {%- endfor -%}
 
