@@ -24,7 +24,7 @@ integration_tests:
       user: "{{ env_var('SNOWFLAKE_TEST_USER') }}"
       password: "{{ env_var('SNOWFLAKE_TEST_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_TEST_ROLE') }}"
-      database: DBT_UNIT_TESTING
+      database: EE_DB
       warehouse: "{{ env_var('SNOWFLAKE_TEST_WAREHOUSE') }}"
       schema: dbt_unit_testing
       threads: 1
