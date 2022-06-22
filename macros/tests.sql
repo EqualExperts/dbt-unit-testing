@@ -126,6 +126,19 @@
       {% if results_length > 0 %}
         {%- do log('\x1b[31m' ~ 'Rows mismatch:' ~ '\x1b[0m', info=true) -%}
         {% do results.print_table(max_columns=None, max_column_width=30) %}
+        
+        {%- set test_full_name = model_name ~ '-' ~ modules.re.sub("[^-_a-zA-Z0-9]", "_", test_description) -%}
+        {%- set report_file = 'target/unit_testing/failures/' ~ test_full_name -%}
+        {%- set csv_report_file = report_file ~ '.csv' -%}
+        {%- set json_report_file = report_file ~ '.json' -%}
+        {%- if dbt_unit_testing.get_config('generate_fail_report_in_csv', false) -%}
+          {%- do results.to_csv(csv_report_file) -%}
+          {%- do log('\x1b[31m' ~ 'CSV REPORT FILE:  ' ~ csv_report_file ~ '\x1b[0m', info=true) -%}
+        {%- endif -%}
+        {%- if dbt_unit_testing.get_config('generate_fail_report_in_json', false) -%}
+          {%- do results.to_json(json_report_file, indent=4) -%}
+          {%- do log('\x1b[31m' ~ 'JSON REPORT FILE:  ' ~ json_report_file ~ '\x1b[0m', info=true) -%}
+        {%- endif -%}
       {% endif %}
     {% endif %}
     (

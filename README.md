@@ -357,9 +357,24 @@ Rows mismatch:
 
 The first line was not on the model but the second line was.
 
+##### Test failures as files
+
+There is also possible to save failed Unit Tests to file system and review separately.  
+Currently 2 formats of reports supported:  
+1. CSV. It's very convenient to compare multi-column unit test failures as CSV, especially with some Rainbow CSV plugin
+2. JSON. It's useful only for cases when there is a type mismatch (number vs text, null vs empty string)
+To enable report generation add the following to the config and configure per each format separately:
+```yaml
+vars:
+  unit_tests_config:
+    generate_fail_report_in_json: true
+    generate_fail_report_in_csv: true
+```
+Failed test result will be stored in `target/unit_testing/failures/` folder respective file formats.  
+
 ## Known Limitations
 
-- It's not possible to have a *model* with the same name as a *source* or a *seed*.
+Not yet :)
 
 ## Compatibility
 
