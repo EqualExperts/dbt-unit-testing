@@ -7,7 +7,7 @@
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% set mock = mocks | selectattr("unique_id", "==", node_id) | first %}
     {% set cte_name = mock.cte_name if mock else node.name %}
-    {% set cte_sql = mock.input_values if mock else build_node_sql(node) %}
+    {% set cte_sql = mock.input_values if mock else dbt_unit_testing.build_node_sql(node) %}
     {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
     {% set cte_dependencies = cte_dependencies.append(cte) %}
   {%- endfor -%}
@@ -58,6 +58,6 @@
     {%- endif -%}
   {%- else -%}
     {% set name = node.identifier if node.resource_type == "source" else node.name %}
-    {{ dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) }}
+    SELECT * FROM {{ dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) }} WHERE FALSE
   {%- endif -%}
 {% endmacro %}

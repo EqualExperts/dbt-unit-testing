@@ -28,7 +28,6 @@ models:
 vars:
   unit_tests_config:
     debug: false
-    mocking_strategy: pure
     input_format: sql
     column_separator: ","
     line_separator: "\n"
