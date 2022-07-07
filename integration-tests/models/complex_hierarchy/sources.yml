@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: dbt_unit_testing
+    tables:
+      - name: s1
+      - name: s2
+      - name: s3
