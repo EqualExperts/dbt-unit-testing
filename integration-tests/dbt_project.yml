@@ -23,6 +23,8 @@ clean-targets: # directories to be removed by `dbt clean`
 vars:
   unit_tests_config:
     debug: false
+    use_database_models: false
+    use_cache: true
     input_format: sql
     column_separator: ","
     line_separator: "\n"

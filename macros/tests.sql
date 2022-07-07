@@ -5,9 +5,11 @@
     {% set test_configuration = {
       "model_name": model_name, 
       "description": test_description, 
-      "options": options} 
+      "options": dbt_unit_testing.merge_configs([options])} 
     %}
     {% set mocks_and_expectations_json_str = caller() %}
+
+    {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
     
     {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
     {% set test_report = dbt_unit_testing.build_test_report(test_configuration) %}
@@ -35,7 +37,7 @@
     {% for mock in mocks %}
       {% do mock.update({"unique_id": dbt_unit_testing.graph_node(mock.source_name, mock.name).unique_id}) %}
       {% if mock.options.include_extra_columns %}
-        {% do dbt_unit_testing.enrich_mock_sql_with_extra_columns(mock) %}
+        {% do dbt_unit_testing.enrich_mock_sql_with_extra_columns(mock, test_configuration.options) %}
       {% endif %}
     {% endfor %}
 
@@ -53,11 +55,9 @@
   {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
   {% set test_report = dbt_unit_testing.run_test_query(test_configuration, test_queries) %}
 
-  {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
-    {{ dbt_unit_testing.debug("------------------------------------") }}
-    {{ dbt_unit_testing.debug("MODEL: " ~ test_configuration.model_name) }}
-    {{ dbt_unit_testing.debug(test_queries.test_query) }}
-  {% endif %}
+  {{ dbt_unit_testing.verbose("-------------------- " ~ test_configuration.model_name ~ " --------------------" ) }}
+  {{ dbt_unit_testing.verbose(test_queries.test_query) }}
+  {{ dbt_unit_testing.verbose("----------------------------------------" ) }}
 
   {{ return (test_report) }}
 {% endmacro %}
@@ -65,7 +65,7 @@
 {% macro build_test_queries(test_configuration) %}
   {% set expectations = test_configuration.expectations %}
   {% set model_node = dbt_unit_testing.model_node(test_configuration.model_name) %}
-  {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks) -%}
+  {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
 
   {%- set actual_query -%}
@@ -135,12 +135,6 @@
   {% set expectations_query = test_queries.expectations_query %}
   {% set test_query = test_queries.test_query %}
 
-  {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
-    {{ dbt_unit_testing.debug("------------------------------------") }}
-    {{ dbt_unit_testing.debug("MODEL: " ~ model_name) }}
-    {{ dbt_unit_testing.debug(test_query) }}
-  {% endif %}
-
   {%- set count_query -%}
     select * FROM 
       (select count(1) as expectation_count from (
@@ -150,11 +144,11 @@
         {{ actual_query }}
       ) as act) as act_count
   {%- endset -%}
-  {% set r1 = run_query(count_query) %}
+  {% set r1 = dbt_unit_testing.run_query(count_query) %}
   {% set expectations_row_count = r1.columns[0].values() | first %}
   {% set actual_row_count = r1.columns[1].values() | first %}
 
-  {% set test_differences = run_query(test_query) %}
+  {% set test_differences = dbt_unit_testing.run_query(test_query) %}
   {% set different_rows_count = test_differences.rows | length %}
   {% set succeeded = different_rows_count == 0 and (expectations_row_count == actual_row_count) %}
 

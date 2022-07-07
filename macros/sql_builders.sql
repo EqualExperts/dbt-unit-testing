@@ -1,4 +1,4 @@
-{% macro build_model_complete_sql(model_node, mocks=[]) %}
+{% macro build_model_complete_sql(model_node, mocks=[], options={}) %}
   {% set models_to_exclude = mocks | rejectattr("options.include_extra_columns", "==", true) | map(attribute="unique_id") | list %}
   {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, models_to_exclude) %}
 
@@ -7,7 +7,7 @@
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% set mock = mocks | selectattr("unique_id", "==", node_id) | first %}
     {% set cte_name = mock.cte_name if mock else node.name %}
-    {% set cte_sql = mock.input_values if mock else dbt_unit_testing.build_node_sql(node) %}
+    {% set cte_sql = mock.input_values if mock else dbt_unit_testing.build_node_sql(node, use_database_models=options.use_database_models) %}
     {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
     {% set cte_dependencies = cte_dependencies.append(cte) %}
   {%- endfor -%}
@@ -17,6 +17,7 @@
       with
       {{ cte_dependencies | join(",\n") }}
     {%- endif -%}
+    {{ "\n" }}
     select * from ({{ render(model_node.raw_sql) }}) as t
   {%- endset -%}
 
@@ -49,15 +50,15 @@
   {{ return (model_dependencies | unique | list) }}
 {% endmacro %}
 
-{% macro build_node_sql(node, complete=false) %}
-  {%- if node.resource_type in ('model','snapshot') -%}
+{% macro build_node_sql(node, complete=false, use_database_models=false) %}
+  {%- if use_database_models or node.resource_type in ('source', 'seed') -%}
+    {% set name = node.identifier if node.resource_type == "source" else node.name %}
+    select * from {{ dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) }} where false
+  {%- else -%}
     {% if complete %}
       {{ dbt_unit_testing.build_model_complete_sql(node) }}
     {%- else -%}
       {{ render(node.raw_sql) }}
     {%- endif -%}
-  {%- else -%}
-    {% set name = node.identifier if node.resource_type == "source" else node.name %}
-    SELECT * FROM {{ dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) }} WHERE FALSE
   {%- endif -%}
 {% endmacro %}

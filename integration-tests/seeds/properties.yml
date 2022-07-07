@@ -5,3 +5,22 @@ seeds:
     config:
       column_types:
         value: numeric
+
+  - name: multi_schema_1
+    config:
+      schema: schema_1
+      alias: multi_schema
+  - name: multi_schema_2
+    config:
+      schema: schema_2
+      alias: multi_schema
+
+  - name: s1
+    config:
+      schema: complex_hierarchy
+  - name: s2
+    config:
+      schema: complex_hierarchy
+  - name: s3
+    config:
+      schema: complex_hierarchy
