@@ -16,11 +16,5 @@ seeds:
       alias: multi_schema
 
   - name: s1
-    config:
-      schema: complex_hierarchy
   - name: s2
-    config:
-      schema: complex_hierarchy
   - name: s3
-    config:
-      schema: complex_hierarchy

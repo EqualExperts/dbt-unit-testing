@@ -11,7 +11,7 @@
   {% call dbt_unit_testing.mock_ref ('m22') %}
     select 1 as id, null as s2_a, null as s2_b
   {% endcall %}
-  {% call dbt_unit_testing.mock_source ('dbt_unit_testing_complex_hierarchy', 's3') %}
+  {% call dbt_unit_testing.mock_source ('dbt_unit_testing', 's3') %}
     select 1 as id, null as s3_a, null as s3_b
   {% endcall %}
   {% call dbt_unit_testing.expect() %}
@@ -25,10 +25,10 @@ UNION ALL
   {% call dbt_unit_testing.mock_ref ('m21') %}
     select 1 as id, null as s1_a, null as s1_b
   {% endcall %}
-  {% call dbt_unit_testing.mock_source ('dbt_unit_testing_complex_hierarchy', 's2') %}
+  {% call dbt_unit_testing.mock_source ('dbt_unit_testing', 's2') %}
     select 1 as id, null as s2_a, null as s2_b
   {% endcall %}
-  {% call dbt_unit_testing.mock_source ('dbt_unit_testing_complex_hierarchy', 's3') %}
+  {% call dbt_unit_testing.mock_source ('dbt_unit_testing', 's3') %}
     select 1 as id, null as s3_a, null as s3_b
   {% endcall %}
   {% call dbt_unit_testing.expect() %}

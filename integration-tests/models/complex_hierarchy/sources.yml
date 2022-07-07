@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: dbt_unit_testing_complex_hierarchy
+  - name: dbt_unit_testing
     tables:
       - name: s1
       - name: s2
