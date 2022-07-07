@@ -1,5 +1,17 @@
-{% macro extract_columns_list(query) %}
+{% macro run_query(query) %}
+  {% set start_time = modules.datetime.datetime.now() %}
   {% set results = run_query(query) %}
+  {% set end_time = modules.datetime.datetime.now() - start_time %}
+  {{ dbt_unit_testing.verbose('Execution time => ' ~ end_time ~ ' => ' ~ dbt_unit_testing.sanitize(query)) }}
+  {{ return (results) }}
+{% endmacro %}
+
+{% macro sanitize(s) %}
+  {{ return (" ".join(s.split())) }}
+{% endmacro %}
+
+{% macro extract_columns_list(query) %}
+  {% set results = dbt_unit_testing.run_query(query) %}
   {% set columns = results.columns | map(attribute='name') | list %}
   {{ return (columns) }}
 {% endmacro %}
@@ -25,12 +37,16 @@
 {% macro log_info(s, only_on_execute=false) %}
   {% if not only_on_execute or execute %}
     {% do log (s, info=true) %}
-  {% endif  %}
+  {% endif %}
 {% endmacro %}
 
 {% macro debug(s) %}
-  {% if var('debug', false) or dbt_unit_testing.get_config('debug', false) %}
-    {{ dbt_unit_testing.log_info (s) }}
+  {{ dbt_unit_testing.log_info (s, only_on_execute=true) }}
+{% endmacro %}
+
+{% macro verbose(s) %}
+  {% if var('verbose', dbt_unit_testing.get_config('verbose', default_value=false)) %}
+    {{ dbt_unit_testing.log_info (s, only_on_execute=true) }}
   {% endif %}
 {% endmacro %}
 
@@ -51,11 +67,12 @@
 {% endmacro %}
 
 {% macro model_node (model_name) %}
-  {{ return (nil | default(dbt_unit_testing.graph_node_by_prefix("model", model_name))
-                 | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name)) 
-                 | default(dbt_unit_testing.graph_node_by_prefix("seed", model_name)))}}
+  {% set node = nil
+      | default(dbt_unit_testing.graph_node_by_prefix("model", model_name))
+      | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name)) 
+      | default(dbt_unit_testing.graph_node_by_prefix("seed", model_name)) %}
   {% if not node %}
-    {{ exceptions.raise_compiler_error("Node "  ~ package_name ~ "." ~ model_name ~ " not found.") }}
+    {{ dbt_unit_testing.raise_error("Node " ~ model.package_name ~ "." ~ model_name ~ " not found.") }}
   {% endif %}
   {{ return (node) }}
 {% endmacro %}
@@ -120,4 +137,25 @@
     {% else %}
       {{ return('"' ~ identifier | upper ~ '"') }}
     {% endif %}
+{% endmacro %}
+
+{% macro cache(scope_key, key, value) %}
+  {% if dbt_unit_testing.get_config('use_cache', true) %}
+    {% set cache = graph.get("__DUT_CACHE__", {}) %}
+    {% set scope = cache.get(scope_key, {}) %}
+    {% do scope.update({key: value}) %}
+    {% do cache.update({scope_key: scope}) %}
+    {% do graph.update({"__DUT_CACHE__": cache}) %}
+  {% else %}
+    {{ return (nil) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro get_from_cache(scope, key) %}
+  {% set cache = graph.get("__DUT_CACHE__", {}).get(scope, {}) %}
+  {{ return (cache[key]) }}
+{% endmacro %}
+
+{% macro raise_error(error_message) %}
+  {{ exceptions.raise_compiler_error('\x1b[31m' ~ error_message ~ '\x1b[0m') }}
 {% endmacro %}
