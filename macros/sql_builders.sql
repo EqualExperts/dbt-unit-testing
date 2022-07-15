@@ -31,7 +31,8 @@
         with
         {{ cte_dependencies | join(",\n") }}
       {%- endif -%}
-      select * from ({{ render(model_node.raw_sql) }}) as t
+      select * from ({{ render(model_node.raw_sql) }}
+      ) as t
     {%- endset -%}
 
     {{ return (final_sql) }}
