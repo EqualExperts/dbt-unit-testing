@@ -1,8 +1,7 @@
 {% macro mock_ref(model_name, options={}) %}
   {% set mock = {
      "type": 'mock',
-     "mock_type": 'model',
-     "cte_name": dbt_unit_testing.ref_cte_name(model_name),
+     "resource_type": 'model',
      "name": model_name,
      "options": options,
      "input_values": caller(),
@@ -17,8 +16,7 @@
   {% endif %}
   {% set mock = {
      "type": 'mock',
-     "mock_type": 'source',
-     "cte_name": dbt_unit_testing.source_cte_name(source_name, table_name),
+     "resource_type": 'source',
      "name": table_name,
      "source_name": source_name,
      "options": options,
