@@ -6,7 +6,7 @@
   {% for node_id in model_dependencies %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% set mock = mocks | selectattr("unique_id", "==", node_id) | first %}
-    {% set cte_name = mock.cte_name if mock else node.name %}
+    {% set cte_name = dbt_unit_testing.cte_name(mock if mock else node) %}
     {% set cte_sql = mock.input_values if mock else dbt_unit_testing.build_node_sql(node, use_database_models=options.use_database_models) %}
     {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
     {% set cte_dependencies = cte_dependencies.append(cte) %}
@@ -24,12 +24,28 @@
   {% do return(model_complete_sql) %}
 {% endmacro %}
 
+{% macro cte_name(node) %}
+  {% if node.resource_type in ('source') %}
+    {{ return (dbt_unit_testing.source_cte_name(node.source_name, node.name)) }}
+  {% else %}
+    {{ return (dbt_unit_testing.ref_cte_name(node.name)) }}
+  {% endif %}
+{% endmacro %}
+
 {% macro ref_cte_name(model_name) %}
   {{ return (dbt_unit_testing.quote_identifier(model_name)) }}
 {% endmacro %}
 
-{% macro source_cte_name(_source, table_name) %}
-  {{ return (dbt_unit_testing.quote_identifier(table_name)) }}
+{% macro source_cte_name(source, table_name) %}
+  {%- set cte_name -%}
+    {%- if dbt_unit_testing.config_is_true("use_qualified_sources") -%}
+      {%- set source_node = dbt_unit_testing.source_node(source, table_name) -%}
+      {{ [source, table_name] | join("__") }}
+    {%- else -%}
+      {{ table_name }}
+    {%- endif -%}
+  {%- endset -%}
+  {{ return (dbt_unit_testing.quote_identifier(cte_name)) }}
 {% endmacro %}
 
 {% macro build_model_dependencies(node, models_to_exclude) %}

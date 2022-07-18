@@ -18,16 +18,18 @@ sources:
       - name: sample_source_name
         identifier: sample_source_identifier
 
-  - name: schema_1
+  - name: source_from_schema_1
+    schema: dbt_unit_testing_schema_1
     tables:
-      - name: multi_schema_1
+      - name: multi_schema
         identifier: multi_schema
         columns:
           - name: name
 
-  - name: schema_2
+  - name: source_from_schema_2
+    schema: dbt_unit_testing_schema_2
     tables:
-      - name: multi_schema_2
+      - name: multi_schema
         identifier: multi_schema
         columns:
           - name: name

@@ -1,8 +1,10 @@
 {% macro run_query(query) %}
   {% set start_time = modules.datetime.datetime.now() %}
+  {{ dbt_unit_testing.verbose('Running query => ' ~ dbt_unit_testing.sanitize(query)) }}
   {% set results = run_query(query) %}
   {% set end_time = modules.datetime.datetime.now() - start_time %}
-  {{ dbt_unit_testing.verbose('Execution time => ' ~ end_time ~ ' => ' ~ dbt_unit_testing.sanitize(query)) }}
+  {{ dbt_unit_testing.verbose('Execution time => ' ~ end_time) }}
+  {{ dbt_unit_testing.verbose('==============================================================') }}
   {{ return (results) }}
 {% endmacro %}
 
@@ -45,7 +47,7 @@
 {% endmacro %}
 
 {% macro verbose(s) %}
-  {% if var('verbose', dbt_unit_testing.get_config('verbose', default_value=false)) %}
+  {% if var('verbose', dbt_unit_testing.config_is_true('verbose')) %}
     {{ dbt_unit_testing.log_info (s, only_on_execute=true) }}
   {% endif %}
 {% endmacro %}
@@ -105,6 +107,10 @@
   {{ return (unit_tests_config.get(config_name, default_value))}}
 {% endmacro %}
 
+{% macro config_is_true(config_name) %}
+  {{ return (dbt_unit_testing.get_config(config_name, default_value=false))}}
+{% endmacro %}
+
 {% macro merge_configs(configs) %}
   {% set unit_tests_config = var("unit_tests_config", {}) %}
   {% set unit_tests_config = {} if unit_tests_config is none else unit_tests_config %}
@@ -140,14 +146,14 @@
 {% endmacro %}
 
 {% macro cache(scope_key, key, value) %}
-  {% if dbt_unit_testing.get_config('use_cache', true) %}
+  {% if dbt_unit_testing.config_is_true('do_not_use_cache') %}
+    {{ return (nil) }}
+  {% else %}
     {% set cache = graph.get("__DUT_CACHE__", {}) %}
     {% set scope = cache.get(scope_key, {}) %}
     {% do scope.update({key: value}) %}
     {% do cache.update({scope_key: scope}) %}
     {% do graph.update({"__DUT_CACHE__": cache}) %}
-  {% else %}
-    {{ return (nil) }}
   {% endif %}
 {% endmacro %}
 
