@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [ -z "$1" ]; then
+  echo 'Please provide profile name'
+  exit 1
+fi
+
 VENV="venv-$1/bin/activate"
 
 if [[ ! -f $VENV ]]; then

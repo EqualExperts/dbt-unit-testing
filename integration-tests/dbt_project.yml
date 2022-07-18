@@ -24,7 +24,8 @@ vars:
   unit_tests_config:
     debug: false
     use_database_models: false
-    use_cache: true
+    use_qualified_sources: true
+    do_not_use_cache: false
     input_format: sql
     column_separator: ","
     line_separator: "\n"
