@@ -69,11 +69,11 @@
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
 
   {%- set actual_query -%}
-    select {{columns}} from ( {{ model_complete_sql }} ) as s
+    select count(1) as count, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
   {% endset %}
 
   {%- set expectations_query -%}
-    select {{columns}} from ({{ expectations.input_values }}) as s
+    select count(1) as count, {{columns}} from ({{ expectations.input_values }}) as s group by {{ columns }}
   {% endset %}
 
   {%- set test_query -%}
@@ -85,14 +85,14 @@
     ),
 
     extra_entries as (
-    select '+' as diff, {{columns}} from actual
+    select '+' as diff, count, {{columns}} from actual
     {{ dbt_utils.except() }}
-    select '+' as diff, {{columns}} from expectations),
+    select '+' as diff, count, {{columns}} from expectations),
 
     missing_entries as (
-    select '-' as diff, {{columns}} from expectations
+    select '-' as diff, count, {{columns}} from expectations
     {{ dbt_utils.except() }}
-    select '-' as diff, {{columns}} from actual)
+    select '-' as diff, count, {{columns}} from actual)
     
     select * from extra_entries
     UNION ALL
