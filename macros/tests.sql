@@ -36,8 +36,8 @@
 
     {% for mock in mocks %}
       {% do mock.update({"unique_id": dbt_unit_testing.graph_node(mock.source_name, mock.name).unique_id}) %}
-      {% if mock.options.include_extra_columns %}
-        {% do dbt_unit_testing.enrich_mock_sql_with_extra_columns(mock, test_configuration.options) %}
+      {% if mock.options.include_missing_columns %}
+        {% do dbt_unit_testing.enrich_mock_sql_with_missing_columns(mock, test_configuration.options) %}
       {% endif %}
     {% endfor %}
 

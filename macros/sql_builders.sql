@@ -1,5 +1,5 @@
 {% macro build_model_complete_sql(model_node, mocks=[], options={}) %}
-  {% set models_to_exclude = mocks | rejectattr("options.include_extra_columns", "==", true) | map(attribute="unique_id") | list %}
+  {% set models_to_exclude = mocks | rejectattr("options.include_missing_columns", "==", true) | map(attribute="unique_id") | list %}
   {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, models_to_exclude) %}
 
   {% set cte_dependencies = [] %}
@@ -18,7 +18,7 @@
       {{ cte_dependencies | join(",\n") }}
     {%- endif -%}
     {{ "\n" }}
-    select * from ({{ render(model_node.raw_sql) }}) as t
+    select * from ({{ render(model_node.raw_sql) }} {{ "\n" }} ) as t
   {%- endset -%}
 
   {% do return(model_complete_sql) %}
@@ -74,7 +74,7 @@
     {% if complete %}
       {{ dbt_unit_testing.build_model_complete_sql(node) }}
     {%- else -%}
-      {{ render(node.raw_sql) }}
+      {{ render(node.raw_sql) ~ "\n"}}
     {%- endif -%}
   {%- endif -%}
 {% endmacro %}

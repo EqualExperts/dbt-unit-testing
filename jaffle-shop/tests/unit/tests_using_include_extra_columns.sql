@@ -4,7 +4,7 @@
     )
 }}
 
-{% set options = {"include_extra_columns": true} %}
+{% set options = {"include_missing_columns": true} %}
 
 {% call dbt_unit_testing.test('customers', 'should show customer_id without orders') %}
   
