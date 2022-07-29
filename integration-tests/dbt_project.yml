@@ -23,6 +23,7 @@ clean-targets: # directories to be removed by `dbt clean`
 vars:
   unit_tests_config:
     debug: false
+    verbose: false
     use_database_models: false
     use_qualified_sources: true
     do_not_use_cache: false
