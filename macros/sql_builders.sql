@@ -1,5 +1,5 @@
 {% macro build_model_complete_sql(model_node, mocks=[], options={}) %}
-  {% set models_to_exclude = mocks | rejectattr("options.include_extra_columns", "==", true) | map(attribute="unique_id") | list %}
+  {% set models_to_exclude = mocks | rejectattr("options.include_missing_columns", "==", true) | map(attribute="unique_id") | list %}
   {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, models_to_exclude) %}
 
   {% set cte_dependencies = [] %}

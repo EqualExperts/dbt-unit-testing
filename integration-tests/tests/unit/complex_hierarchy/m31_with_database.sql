@@ -4,7 +4,7 @@
     )
 }}
 
-{% call dbt_unit_testing.test('m31', 'no need to specify all columns and mock all models', {"include_extra_columns": true, "use_database_models": true}) %}
+{% call dbt_unit_testing.test('m31', 'no need to specify all columns and mock all models', {"include_missing_columns": true, "use_database_models": true}) %}
   {% call dbt_unit_testing.mock_ref ('m21') %}
     select 1 as id
   {% endcall %}

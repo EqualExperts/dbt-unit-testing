@@ -18,7 +18,7 @@
 UNION ALL
 
 {% call dbt_unit_testing.test('model_f_references_a_non_nullable_field', 'sample test passes if we include extra columns') %}
-  {% call dbt_unit_testing.mock_ref ('model_a', {"include_extra_columns": true}) %}
+  {% call dbt_unit_testing.mock_ref ('model_a', {"include_missing_columns": true}) %}
     select 0 as a
     UNION ALL
     select 1 as a
