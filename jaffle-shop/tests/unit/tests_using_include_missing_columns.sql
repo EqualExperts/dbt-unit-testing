@@ -1,16 +1,17 @@
 {{
     config(
-        tags=['unit-test']
+        tags=['unit-test', 'db-dependency']
     )
 }}
 
+{% set options = {"include_missing_columns": true} %}
 
 {% call dbt_unit_testing.test('customers', 'should show customer_id without orders') %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
-    select 1 as customer_id, '' as first_name, '' as last_name
+  {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
+    select 1 as customer_id
   {% endcall %}
-  
+
   {% call dbt_unit_testing.expect() %}
     select 1 as customer_id
   {% endcall %}
@@ -20,12 +21,12 @@ UNION ALL
 
 {% call dbt_unit_testing.test('customers', 'should show customer name') %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
-    select null::Numeric as customer_id, 'John' as first_name, 'Doe' as last_name
+  {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
+    select 'John' as first_name, 'Doe' as last_name
   {% endcall %}
-  
+
   {% call dbt_unit_testing.expect() %}
-    select null::Numeric as customer_id, 'John' as first_name, 'Doe' as last_name
+    select 'John' as first_name, 'Doe' as last_name
   {% endcall %}
 {% endcall %}
 
@@ -33,17 +34,17 @@ UNION ALL
 
 {% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value') %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
-    select 1 as customer_id, '' as first_name, '' as last_name
+  {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
+    select 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_orders') %}
-    select 1001 as order_id, 1 as customer_id, null as order_date
+  {% call dbt_unit_testing.mock_ref ('stg_orders', options) %}
+    select 1001 as order_id, 1 as customer_id
     UNION ALL
-    select 1002 as order_id, 1 as customer_id, null as order_date
+    select 1002 as order_id, 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_payments') %}
+  {% call dbt_unit_testing.mock_ref ('stg_payments', options) %}
     select 1001 as order_id, 10 as amount
     UNION ALL
     select 1002 as order_id, 10 as amount
@@ -54,21 +55,22 @@ UNION ALL
   {% endcall %}
 {% endcall %}
 
+
 UNION ALL
 
 {% call dbt_unit_testing.test('customers', 'should calculate the number of orders') %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
-    select 1 as customer_id, '' as first_name, '' as last_name
+  {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
+    select 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_orders') %}
-    select 1001 as order_id, 1 as customer_id, null as order_date
+  {% call dbt_unit_testing.mock_ref ('stg_orders', options) %}
+    select 1001 as order_id, 1 as customer_id
     UNION ALL
-    select 1002 as order_id, 1 as customer_id, null as order_date
+    select 1002 as order_id, 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_payments') %}
+  {% call dbt_unit_testing.mock_ref ('stg_payments', options) %}
     select 1001 as order_id, 0 as amount
     UNION ALL
     select 1002 as order_id, 0 as amount
@@ -83,20 +85,20 @@ UNION ALL
 
 {% call dbt_unit_testing.test('customers', 'should calculate most recent order') %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
-    select 1 as customer_id, '' as first_name, '' as last_name
+  {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
+    select 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_orders') %}
+  {% call dbt_unit_testing.mock_ref ('stg_orders', options) %}
     select 1001 as order_id, 1 as customer_id, '2020-10-01'::Timestamp as order_date
     UNION ALL
     select 1002 as order_id, 1 as customer_id, '2021-01-02'::Timestamp as order_date
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_payments') %}
-    select 1001 as order_id, 0 as amount
+  {% call dbt_unit_testing.mock_ref ('stg_payments', options) %}
+    select 1001 as order_id
     UNION ALL
-    select 1002 as order_id, 0 as amount
+    select 1002 as order_id
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
@@ -108,20 +110,20 @@ UNION ALL
 
 {% call dbt_unit_testing.test('customers', 'should calculate first order') %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
-    select 1 as customer_id, '' as first_name, '' as last_name
+  {% call dbt_unit_testing.mock_ref ('stg_customers', options) %}
+    select 1 as customer_id
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_orders') %}
+  {% call dbt_unit_testing.mock_ref ('stg_orders', options) %}
     select 1001 as order_id, 1 as customer_id, '2020-10-01'::Timestamp as order_date
     UNION ALL
     select 1002 as order_id, 1 as customer_id, '2021-01-02'::Timestamp as order_date
   {% endcall %}
   
-  {% call dbt_unit_testing.mock_ref ('stg_payments') %}
-    select 1001 as order_id, 0 as amount
+  {% call dbt_unit_testing.mock_ref ('stg_payments', options) %}
+    select 1001 as order_id
     UNION ALL
-    select 1002 as order_id, 0 as amount
+    select 1002 as order_id
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}

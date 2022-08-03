@@ -17,12 +17,19 @@ sources:
           identifier: true
       - name: sample_source_name
         identifier: sample_source_identifier
+
+  - name: source_from_schema_1
+    schema: dbt_unit_testing_schema_1
+    tables:
       - name: multi_schema
+        identifier: multi_schema
         columns:
           - name: name
 
-  - name: dbt_unit_testing_2
+  - name: source_from_schema_2
+    schema: dbt_unit_testing_schema_2
     tables:
       - name: multi_schema
+        identifier: multi_schema
         columns:
           - name: name

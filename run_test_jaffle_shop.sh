@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [ -z "$1" ]; then
+  echo 'Please provide profile name'
+  exit 1
+fi
+
 VENV="venv-$1/bin/activate"
 
 if [[ ! -f $VENV ]]; then
@@ -18,4 +24,8 @@ if [[ ! -e ~/.dbt/profiles.yml ]]; then
 fi
 
 dbt deps --target $1
-dbt test --target $1 --models tag:unit-test
+dbt test --target $1 --models tag:unit-test,tag:no-db-dependency
+# create seeds in the database
+dbt seed --target $1
+# run tests that leverages from the created sources
+dbt test --target $1 --models tag:unit-test,tag:db-dependency
