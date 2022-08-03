@@ -8,7 +8,11 @@
     {% set mock = mocks | selectattr("unique_id", "==", node_id) | first %}
     {% set cte_name = dbt_unit_testing.cte_name(mock if mock else node) %}
     {% set cte_sql = mock.input_values if mock else dbt_unit_testing.build_node_sql(node, use_database_models=options.use_database_models) %}
-    {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
+    {% set cte %}
+      {{ dbt_unit_testing.quote_identifier(cte_name) }} as (
+        {{ cte_sql }}
+      )
+    {% endset %}
     {% set cte_dependencies = cte_dependencies.append(cte) %}
   {%- endfor -%}
 
@@ -18,7 +22,8 @@
       {{ cte_dependencies | join(",\n") }}
     {%- endif -%}
     {{ "\n" }}
-    select * from ({{ render(model_node.raw_sql) }} {{ "\n" }} ) as t
+    select * from ({{ render(model_node.raw_sql) }}
+    ) as t
   {%- endset -%}
 
   {% do return(model_complete_sql) %}
@@ -74,7 +79,7 @@
     {% if complete %}
       {{ dbt_unit_testing.build_model_complete_sql(node) }}
     {%- else -%}
-      {{ render(node.raw_sql) ~ "\n"}}
+      {{ render(node.raw_sql) }}
     {%- endif -%}
   {%- endif -%}
 {% endmacro %}
