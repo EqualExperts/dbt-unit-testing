@@ -40,7 +40,7 @@ packages:
 
 [read the docs](https://docs.getdbt.com/docs/package-management) for more information on installing packages.
 
-**Warning**: 0.2.0 introduces breaking changes removing the mocking strategies. We recommend you to upgrade from 0.1.3.
+**Warning**: We recommend you to upgrade from 0.1.3. However 0.2.0 introduces breaking changes by removing the mocking strategies (you need to update and use the new options, see [Available Options](#available-options) ).
 
 # More About Dbt Unit Testing
 ## Purpose
