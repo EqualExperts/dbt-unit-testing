@@ -13,8 +13,22 @@
 {% endmacro %}
 
 {% macro render_node(node) %}
-  {% set sql = node.raw_sql | default(node.raw_code) %}
+  {% set sql = node.raw_sql if dbt_unit_testing.version_in_group("1.2.0") else node.raw_code %}
   {{ return (render(sql)) }}
+{% endmacro %}
+
+{% macro version_in_group(version_group_identifier) %}
+  {% set version_groups = [["1.1.0", "1.2.0"], ["1.3.0b1"]] %}
+  {% set group_indexes = {"i1": -1, "i2": -1} %}
+  {% for version_group in version_groups %}
+    {% if dbt_version in version_group %}
+      {% do group_indexes.update({"i1": loop.index}) %}
+    {% endif %}
+    {% if version_group_identifier in version_group %}
+      {% do group_indexes.update({"i2": loop.index}) %}
+    {% endif %}
+  {% endfor %}
+  {{ return (group_indexes.i1 == group_indexes.i2) }}
 {% endmacro %}
 
 {% macro extract_columns_list(query) %}
