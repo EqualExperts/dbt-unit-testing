@@ -22,7 +22,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: test snowflake
-        run: ./run_test.sh snowflake
+        run: ./run-all-integration-tests.sh snowflake
 
   pr-integration-tests-bigquery:
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
         uses: "google-github-actions/setup-gcloud@v0"
 
       - name: test bigquery
-        run: ./run_test.sh bigquery
+        run: ./run-all-integration-tests.sh bigquery
 
   pr-integration-tests-postgres:
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: test postgres
-        run: ./run_test.sh postgres
+        run: ./run-all-integration-tests.sh postgres
 
   pr-jaffle-shop-tests-postgres:
     runs-on: ubuntu-latest
@@ -100,7 +100,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: test postgres
-        run: ./run_test_jaffle_shop.sh postgres
+        run: ./run-all-jaffle-shop-tests.sh postgres
 
   remove-safe-to-test-label-after-test-run:
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
         pr-integration-tests-snowflake,
         pr-integration-tests-bigquery,
         pr-integration-tests-postgres,
-        pr-jaffle-shop-tests-postgres
+        pr-jaffle-shop-tests-postgres,
       ]
     environment: test
 
@@ -120,7 +120,6 @@ jobs:
         with:
           remove-labels: "safe to test"
 
-  
   pr-check-skipped-tests:
     runs-on: ubuntu-latest
     needs:
@@ -128,10 +127,10 @@ jobs:
         pr-integration-tests-snowflake,
         pr-integration-tests-bigquery,
         pr-integration-tests-postgres,
-        pr-jaffle-shop-tests-postgres
+        pr-jaffle-shop-tests-postgres,
       ]
     environment: test
-    if: | 
+    if: |
       always() && 
       (needs.pr-integration-tests-snowflake.result == 'skipped' ||
        needs.pr-integration-tests-bigquery.result == 'skipped' || 
@@ -142,4 +141,4 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-              core.setFailed('Some integration Tests were skipped!')
+            core.setFailed('Some integration Tests were skipped!')

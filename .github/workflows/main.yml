@@ -21,7 +21,7 @@ jobs:
       - uses: "actions/checkout@v2"
 
       - name: test snowflake
-        run: ./run_test.sh snowflake
+        run: ./run-all-integration-tests.sh snowflake
 
   integration-tests-bigquery:
     runs-on: ubuntu-latest
@@ -40,7 +40,7 @@ jobs:
         uses: "google-github-actions/setup-gcloud@v0"
 
       - name: test bigquery
-        run: ./run_test.sh bigquery
+        run: ./run-all-integration-tests.sh bigquery
 
   integration-tests-postgres:
     runs-on: ubuntu-latest
@@ -65,8 +65,7 @@ jobs:
       - uses: "actions/checkout@v2"
 
       - name: test postgres
-        run: ./run_test.sh postgres
-
+        run: ./run-all-integration-tests.sh postgres
 
   jaffle-shop-tests-postgres:
     runs-on: ubuntu-latest
@@ -91,5 +90,4 @@ jobs:
       - uses: "actions/checkout@v2"
 
       - name: test postgres
-        run: ./run_test_jaffle_shop.sh postgres
-
+        run: ./run-all-jaffle-shop-tests.sh postgres
