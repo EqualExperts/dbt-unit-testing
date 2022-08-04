@@ -26,7 +26,7 @@ vars:
     use_qualified_sources: true
     use_database_models: false
     include_missing_columns: false
-    do_not_use_cache: false
+    disable_cache: false
     input_format: sql
     column_separator: ","
     line_separator: "\n"

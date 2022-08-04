@@ -165,7 +165,7 @@
 {% endmacro %}
 
 {% macro cache(scope_key, key, value) %}
-  {% if dbt_unit_testing.config_is_true('do_not_use_cache') %}
+  {% if dbt_unit_testing.config_is_true('disable_cache') %}
     {{ return (nil) }}
   {% else %}
     {% set cache = graph.get("__DUT_CACHE__", {}) %}
