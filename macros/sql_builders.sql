@@ -18,7 +18,7 @@
       {{ cte_dependencies | join(",\n") }}
     {%- endif -%}
     {{ "\n" }}
-    select * from ({{ render(model_node.raw_sql) }} {{ "\n" }} ) as t
+    select * from ({{ dbt_unit_testing.render_node(model_node) }} {{ "\n" }} ) as t
   {%- endset -%}
 
   {% do return(model_complete_sql) %}
@@ -74,7 +74,7 @@
     {% if complete %}
       {{ dbt_unit_testing.build_model_complete_sql(node) }}
     {%- else -%}
-      {{ render(node.raw_sql) ~ "\n"}}
+      {{ dbt_unit_testing.render_node(node) ~ "\n"}}
     {%- endif -%}
   {%- endif -%}
 {% endmacro %}
