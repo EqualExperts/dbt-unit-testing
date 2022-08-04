@@ -1,12 +1,12 @@
 [![Dbt Unit Testing](https://github.com/EqualExperts/dbt-unit-testing/actions/workflows/main.yml/badge.svg)](https://github.com/EqualExperts/dbt-unit-testing/actions/workflows/main.yml)
+
+<!-- omit in toc -->
 # DBT Unit Testing
 
-Dbt Unit Testing is a dbt package that provides support for unit testing in [dbt](https://github.com/dbt-labs/dbt). 
+Dbt Unit Testing is a dbt package that provides support for unit testing in [dbt](https://github.com/dbt-labs/dbt).
 
 You can test models independently by mocking their dependencies (models, sources, snapshots, seeds).
 
-
-- [DBT Unit Testing](#dbt-unit-testing)
 - [Installation](#installation)
 - [More About Dbt Unit Testing](#more-about-dbt-unit-testing)
   - [Purpose](#purpose)
@@ -43,25 +43,28 @@ packages:
 **Warning**: We recommend you to upgrade from 0.1.3. However 0.2.0 introduces breaking changes by removing the mocking strategies (you need to update and use the new options, see [Available Options](#available-options) ).
 
 # More About Dbt Unit Testing
+
 ## Purpose
 
 Neither the data tests nor the schema tests are suitable to test the models' logic because the intention is to test the data flowing through the models. However, after coding a couple of models, we found the need to have unit tests for models to test the model logic with mocked data. Also, the expected behaviour of unit tests consists of:
+
 - Ability to mock dependencies
 - Ability to run each test independently
 - Fast feedback loop
-- Good Test Feedback 
+- Good Test Feedback
 
 ## SQL First
 
-We believe using SQL for the tests is the best approach we can take, with some help from Jinja macros. It could be debatable, but we think using SQL requires less knowledge and a friendlier learning curve. 
+We believe using SQL for the tests is the best approach we can take, with some help from Jinja macros. It could be debatable, but we think using SQL requires less knowledge and a friendlier learning curve.
 
 ## How
 
 We have a set of Jinja macros that allow you to define your mocks and the test scenario. With your test definition, we generate a big SQL query representing the test and run the query against a dev environment. The tests can run in two different ways:
-- without any dependencies of artifacts (models, sources, snapshots). You don't need models or sources on the dev environment for testing; it just uses the SQL Engine. However, you must mock all the dependencies and all the columns in tests. 
+
+- without any dependencies of artifacts (models, sources, snapshots). You don't need models or sources on the dev environment for testing; it just uses the SQL Engine. However, you must mock all the dependencies and all the columns in tests.
 - with dependencies of artifact definition (defined models, sources or snapshots). It means that we can use your model definition to make your test simpler. For instance, if you have a model with 20 columns to mock and just want to mock one, we can grab the missing columns from your model/source definition and save you the work. You also need to have them refreshed to run the tests.
 
-Both strategies have pros and cons. We think you should use the tests without any dependencies till you think it's unusable and hard to maintain. 
+Both strategies have pros and cons. We think you should use the tests without any dependencies till you think it's unusable and hard to maintain.
 
 ## Main Features
 
@@ -75,7 +78,9 @@ Both strategies have pros and cons. We think you should use the tests without an
 # Documentation
 
 ## Anatomy of a test
+
 The test is composed of a test setup (mocks) and expectations:
+
 ```jinja
 {{ config(tags=['unit-test']) }}
 
@@ -142,16 +147,19 @@ We've created an illustrative test suite for the [jaffle-shop](/jaffle-shop/). L
 
 ```
 
-Looking at the first macro: 
+Looking at the first macro:
+
 ```jinja
 {% call dbt_unit_testing.test('customers', 'should sum order values to calculate customer_lifetime_value') %}
 ```
-You can see that the test is about the 'customers' model, and the test description means that it tests the calculation of the customer_lifetime_value. The model customers has three dependencies: 
+
+You can see that the test is about the 'customers' model, and the test description means that it tests the calculation of the customer_lifetime_value. The model customers has three dependencies:
+
 - 'stg_customers'
 - 'stg_orders'
 - 'stg_payments'
 
-Then the test setup consists of 3 mocks. 
+Then the test setup consists of 3 mocks.
 
 ```jinja
 
@@ -172,7 +180,9 @@ Then the test setup consists of 3 mocks.
   {% endcall %}
 
 ```
-It creates a scenario with a single user with two orders and two payments that we use to ensure the calculation is correct with the following expectation:
+
+It creates a scenario with a single user with two orders and two payments that we use to ensure the
+calculation is correct with the following expectation:
 
 ```jinja
 
@@ -269,7 +279,7 @@ With the above configuration, you could write your tests like this:
 
 ## Mocking
 
-Mocks can be completely independent of the dev/test environment if you set up all the required dependencies (it's explained here [How](#how). 
+Mocks can be completely independent of the dev/test environment if you set up all the required dependencies (it's explained here [How](#how).
 
 Let's take a look into another [jaffle-shop](/jaffle-shop/) example, an almost dumb test, but it illustrates well:
 
@@ -300,6 +310,7 @@ It tests the customer_id that comes from the stg_customers, but the setup contai
 
 As mentioned, there's a possibility to improve the test setup.
 You can use the option **'include_missing_columns'** in the mocks:
+
 ```jinja
 {% set options = {"include_missing_columns": true} %}
 
@@ -316,7 +327,7 @@ You can use the option **'include_missing_columns'** in the mocks:
 ```
 
  Much simpler to read and maintain, but there's a cost! You need the **sources** defined and updated in your test/dev env.
- 
+
  **'include_missing_columns'** inspects your models and sources to calculate what columns are missing in each mock. When a mock is missing, the framework infers the mock from the models and sources, if they exist.
 
  Each approach has pros and cons, so it's up to you to decide if you want to depend on the underlying table definitions.
@@ -327,6 +338,7 @@ The framework infers the missing columns and missing mocks by building the SQL o
 This SQL can be a pretty complex query; sometimes, it's non-performant or even a blocker.
 
 You can use the option **'use-database-models'** to avoid the recursive inspection and use the model defined in the database. Be aware that this makes a new dependency on the underlying model definition, and it needs to be updated each time you run a test.
+
 ### Requirement
 
 To be able to mock the models and sources in tests, in your dbt models you **must** use the macros  **dbt_unit_testing.ref** and **dbt_unit_testing.source**, for example:
@@ -349,8 +361,8 @@ Alternatively, if you prefer to keep using the standard `ref` macro in the model
 {% endmacro %}
 ```
 
-
 ## Available Options
+
 | option                      | description                     | default              | scope*              |
 |-----------------------------|---------------------------------|--------------------|--------------------|
 | **include_missing_columns** | Use the definition of the model to grab the columns not specified in a mock. The columns will be added automatically with *null* values (this option will increase the number of roundtrips to the database when running the test).                          | false | project/test/mock       |
@@ -360,20 +372,21 @@ Alternatively, if you prefer to keep using the standard `ref` macro in the model
 | **line_separator**          | Defines the line separator for csv format                       | \\n | project/test       |
 | **type_separator**          | Defines the type separator for csv format                       | :: | project/test       |
 | **use_qualified_sources**   | Use qualified names (source_name + table_name) for sources when building the CTEs for the test query. It allows you to have source models with the same name in different sources/schema.                         | false | project            |
-| **do_not_use_cache**        | ...                             | false| project            |
+| **disable_cache**        | Disable cache                             | false| project            |
 Notes:
-* **scope** is the place where the option can be defined: 
+
+- **scope** is the place where the option can be defined:
   - if the scope is project you can define the option as a global setting in the project.yml
   - if the scope is test you can define/override the option at the test level
   - if the scope is mock you can define/override the option at the mock level
-  
-* **Qualified sources** You must use an alias when referencing sources if you use this option.
+- **Qualified sources** You must use an alias when referencing sources if you use this option.
 
 ## Test Feedback
 
 Good test feedback is what allows us to be productive when developing unit tests and developing our models.
 The test macro provides visual feedback when a test fails, showing what went wrong by comparing the lines of the expectations with the actuals.
 To make the feedback even more readable, you can provide `output_sort_field` in parameters specifying the field to sort by:  
+
 ```jinja
 {% call dbt_unit_testing.test('some_model', 'smoke test', {"output_sort_field": "business_id"}) %}
 
@@ -381,6 +394,7 @@ To make the feedback even more readable, you can provide `output_sort_field` in 
   
 {% endcall %}
 ```
+
 The result will be displayed the way to compare two adjacent lines conveniently.  
 
 ### Example
@@ -389,10 +403,10 @@ The result will be displayed the way to compare two adjacent lines conveniently.
 MODEL: customers
 TEST:  should sum order values to calculate customer_lifetime_value
 Rows mismatch:
-| | diff | customer_id | customer_lifetime_value |
-| | ---- | ----------- | ----------------------- |
-| | +    |           1 |                      20 |
-| | -    |           1 |                      30 |
+| diff | count | customer_id | customer_lifetime_value |
+| ---- | ----- | ----------- | ----------------------- |
+| +    |     1 |           1 |                      20 |
+| -    |     1 |           1 |                      30 |
 ```
 
 The first line was not on the model, but the second line was.
@@ -400,7 +414,9 @@ The first line was not on the model, but the second line was.
 # Known Limitations
 
 - It's impossible to have a *model* with the same name as a *source* or a *seed*unless you use the qualified sources options.
+
 - With our current approach, you must not mix the built-in ref/source with the overridden dbt unit testing versions. E.g., You can't use dbt_utils star macro because it receives a relation from a ref/source.
+
 # Compatibility
 
 [x] dbt > 0.20
