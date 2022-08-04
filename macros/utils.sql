@@ -12,6 +12,11 @@
   {{ return (" ".join(s.split())) }}
 {% endmacro %}
 
+{% macro render_node(node) %}
+  {% set sql = node.raw_sql | default(node.raw_code) %}
+  {{ return (render(sql)) }}
+{% endmacro %}
+
 {% macro extract_columns_list(query) %}
   {% set results = dbt_unit_testing.run_query(query) %}
   {% set columns = results.columns | map(attribute='name') | list %}
