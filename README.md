@@ -361,6 +361,13 @@ Alternatively, if you prefer to keep using the standard `ref` macro in the model
 {% endmacro %}
 ```
 
+If you need to use the original dbt *ref* macro for some reason (in *dbt_utils.star* macro, for instance), you can use *builtins.ref*, like this:
+
+```jinja
+select {{ dbt_utils.star(builtins.ref('some_model')) }}
+from {{ ref('some_model') }}
+```
+
 ## Available Options
 
 | option                      | description                     | default              | scope*              |
@@ -413,9 +420,37 @@ The first line was not on the model, but the second line was.
 
 # Known Limitations
 
-- It's impossible to have a *model* with the same name as a *source* or a *seed*unless you use the qualified sources options.
+- You can not have a *model* with the same name as a *source* or a *seed* (unless you set the *use_qualified_sources* option to *true*).
 
-- With our current approach, you must not mix the built-in ref/source with the overridden dbt unit testing versions. E.g., You can't use dbt_utils star macro because it receives a relation from a ref/source.
+- With our current approach, there's an extra step that you need to take if you want to use the builtins *ref* or *source* macros in your models (in *dbt_utils.star*, for instance). Otherwise, you'll get an error like this one:
+
+```jinja
+Compilation Error in test some_model_test (tests/unit/some_model_test.sql)
+    dbt was unable to infer all dependencies for the model "some_model_test".
+    This typically happens when ref() is placed within a conditional block.
+    
+    To fix this, add the following hint to the top of the model "some_model_test":
+    
+    -- depends_on: {{ ref('some_model') }}
+````
+
+If this situation, you need to add this line to the top of your **test** (**not the model!**):
+
+```jinja
+-- depends_on: {{ ref('some_model') }}
+{{
+    config(
+        tags=['unit-test']
+    )
+}}
+
+{% call dbt_unit_testing.test('model_being_tested', 'sample test') %}
+
+... ... ... ... ... 
+
+```
+
+
 
 # Compatibility
 
