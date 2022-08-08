@@ -434,7 +434,7 @@ Compilation Error in test some_model_test (tests/unit/some_model_test.sql)
     -- depends_on: {{ ref('some_model') }}
 ````
 
-If this situation, you need to add this line to the top of your **test** (**not the model!**):
+In this situation, you need to add this line to the top of your **test** (**not the model!**):
 
 ```jinja
 -- depends_on: {{ ref('some_model') }}
