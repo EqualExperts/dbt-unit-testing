@@ -1,7 +1,7 @@
 -- depends_on: {{ ref('model_a') }}
 {{
     config(
-        tags=['unit-test', 'bigquery', 'snowflake', 'postgres']
+        tags=['unit-test', 'bigquery', 'snowflake', 'postgres', 'db-dependency']
     )
 }}
 
