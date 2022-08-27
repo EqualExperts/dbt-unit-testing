@@ -117,14 +117,14 @@
   {% set model_name = test_configuration.model_name %}
   {% set test_description = test_configuration.description | default('(no description)') %}
 
-  {%- do log('\x1b[31m' ~ 'MODEL: ' ~ '\x1b[33m' ~ model_name ~ '\x1b[0m', info=true) -%}
-  {%- do log('\x1b[31m' ~ 'TEST:  ' ~ '\x1b[33m' ~ test_description ~ '\x1b[0m', info=true) -%}
-  {% if expectations_row_count != actual_row_count %}
-    {%- do log('\x1b[31m' ~ 'ERROR: ' ~ '\x1b[33m' ~ 'Number of Rows do not match! (Expected: ' ~ test_report.expectations_row_count ~ ', Actual: ' ~ test_report.actual_row_count ~ ')' ~ '\x1b[0m', info=true) -%}
+  {{ dbt_unit_testing.println('{RED}MODEL1: {YELLOW}model_name') }}
+  {{ dbt_unit_testing.println('{RED}TEST:  {YELLOW}' ~ test_description) }}
+  {% if test_report.expectations_row_count != test_report.actual_row_count %}
+    {{ dbt_unit_testing.println('{RED}ERROR: {YELLOW}Number of Rows do not match! (Expected: ' ~ test_report.expectations_row_count ~ ', Actual: ' ~ test_report.actual_row_count ~ ')') }}
   {% endif %}
   {% if test_report.different_rows_count > 0 %}
-    {%- do log('\x1b[31m' ~ 'ERROR: ' ~ '\x1b[33m' ~ 'Rows mismatch:' ~ '\x1b[0m', info=true) -%}
-    {% do test_report.test_differences.print_table(max_columns=None, max_column_width=30) %}
+    {{ dbt_unit_testing.println('{RED}ERROR: {YELLOW}Rows mismatch:') }}
+    {{ dbt_unit_testing.print_table(test_report.test_differences) }}
   {% endif %}
 {% endmacro %}
 
