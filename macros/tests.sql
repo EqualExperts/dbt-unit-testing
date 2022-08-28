@@ -117,7 +117,7 @@
   {% set model_name = test_configuration.model_name %}
   {% set test_description = test_configuration.description | default('(no description)') %}
 
-  {{ dbt_unit_testing.println('{RED}MODEL1: {YELLOW}model_name') }}
+  {{ dbt_unit_testing.println('{RED}MODEL: {YELLOW}model_name') }}
   {{ dbt_unit_testing.println('{RED}TEST:  {YELLOW}' ~ test_description) }}
   {% if test_report.expectations_row_count != test_report.actual_row_count %}
     {{ dbt_unit_testing.println('{RED}ERROR: {YELLOW}Number of Rows do not match! (Expected: ' ~ test_report.expectations_row_count ~ ', Actual: ' ~ test_report.actual_row_count ~ ')') }}

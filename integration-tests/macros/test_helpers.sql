@@ -12,7 +12,7 @@
     {% set test_report = dbt_unit_testing.build_test_report(test_configuration) %}
 
     {% if test_report.succeeded %}
-        {%- do log('\x1b[31m' ~ 'Test: "' ~ test_description ~ '" should have FAILED' ~ '\x1b[0m', info=true) -%}
+        {{ dbt_unit_testing.println("{RED}Test: " ~ "{YELLOW}" ~ test_description ~ " {RED}should have FAILED")}}
     {% endif %}
     select 1 from (select 1) as t where {{ test_report.succeeded }}
   {% endif %}

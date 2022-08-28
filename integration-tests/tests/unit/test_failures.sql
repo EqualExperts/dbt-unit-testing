@@ -6,9 +6,7 @@
 
 {% call test_should_fail('model_b_references_a', 'more rows expected') %}
   {% call dbt_unit_testing.mock_ref ('model_a') %}
-    select 0 as a, 'a' as b
-    UNION ALL
-    select 1 as a, 'b' as b
+    select 1 as a, 'a' as b
   {% endcall %}
   {% call dbt_unit_testing.expect() %}
     select 1 as a, 'b' as b
