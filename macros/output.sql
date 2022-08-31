@@ -26,8 +26,10 @@
   {% set cells = [] %}
   {% for col_name in agate_table.column_names %}
     {% set col_index = loop.index0 %}
-    {% if col_index < columns_start_index or columns_info[col_index].has_differences %}
-      {% set padded = dbt_unit_testing.pad(col_name, columns_info[col_index].max_length, pad_right=columns_info[col_index].is_string) %}
+    {% set padded = dbt_unit_testing.pad(col_name, columns_info[col_index].max_length, pad_right=columns_info[col_index].is_string) %}
+    {% if columns_info[col_index].has_differences %}
+      {% do cells.append("{RED}" ~ padded ~ "{RESET}") %}
+    {% else %}
       {% do cells.append(padded) %}
     {% endif %}
   {% endfor %}
@@ -36,9 +38,7 @@
   {% set cells = [] %}
   {% for col_name in agate_table.column_names %}
     {% set col_index = loop.index0 %}
-    {% if col_index < columns_start_index or columns_info[col_index].has_differences %}
-      {% do cells.append(dbt_unit_testing.pad("", columns_info[col_index].max_length, c="-")) %}
-    {% endif %}
+    {% do cells.append(dbt_unit_testing.pad("", columns_info[col_index].max_length, c="-")) %}
   {% endfor %}
   {{ dbt_unit_testing.println("| " ~ cells | join(" | ") ~ " |")}}
 
@@ -46,10 +46,12 @@
     {% set cells = [] %}
     {% for cell_value in row %}
       {% set col_index = loop.index0 %}
-      {% if col_index < columns_start_index or columns_info[col_index].has_differences %}
         {% set padded = dbt_unit_testing.pad(cell_value, columns_info[col_index].max_length, pad_right=cell_value is string) %}
-        {% do cells.append(padded) %}
-      {% endif %}
+        {% if columns_info[col_index].has_differences %}
+          {% do cells.append("{RED}" ~ padded ~ "{RESET}") %}
+        {% else %}
+          {% do cells.append(padded) %}
+        {% endif %}
     {% endfor %}
     {{ dbt_unit_testing.println("| " ~ cells | join(" | ") ~ " |")}}
   {% endfor %}
