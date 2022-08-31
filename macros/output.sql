@@ -38,7 +38,12 @@
   {% set cells = [] %}
   {% for col_name in agate_table.column_names %}
     {% set col_index = loop.index0 %}
-    {% do cells.append(dbt_unit_testing.pad("", columns_info[col_index].max_length, c="-")) %}
+    {% set line = dbt_unit_testing.pad("", columns_info[col_index].max_length, c="-") %}
+    {% if columns_info[col_index].has_differences %}
+      {% do cells.append("{RED}" ~ line ~ "{RESET}") %}
+    {% else %}
+      {% do cells.append(line) %}
+    {% endif %}
   {% endfor %}
   {{ dbt_unit_testing.println("| " ~ cells | join(" | ") ~ " |")}}
 
