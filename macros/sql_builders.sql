@@ -30,7 +30,7 @@
 {% endmacro %}
 
 {% macro build_model_complete_sql(model_node, mocks=[], options={}) %}
-  {% set mockall = options.get("mock_all", true) %}
+  {% set mockall = dbt_unit_testing.is_mock_all(options)}
 
   {% if mockall %}
     {% set cte_dependencies = dbt_unit_testing.build_cte_mocked_dependencies(mocks) %}

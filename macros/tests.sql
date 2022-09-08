@@ -22,6 +22,16 @@
   {% endif %}
 {% endmacro %}
 
+{% macro get_mock_unique_id(mock, test_configuration) %}
+  {% set mock_all = dbt_unit_testing.is_mock_all(test_configuration.options) %}
+
+  {% if mock_all and not mock.source_name %}
+    {{ return (mock.resource_type ~ "." ~ model.package_name ~ "." ~ mock.name) }}
+  {% else %}
+    {{ return (dbt_unit_testing.graph_node(mock.source_name, mock.name).unique_id) }}
+  {% endif %}
+{% endmacro %}
+
 {% macro build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str) %}
     {% set mocks_and_expectations = dbt_unit_testing.split_json_str(mocks_and_expectations_json_str) %}
 
@@ -35,7 +45,7 @@
     {% set expectations = mocks_and_expectations | selectattr("type", "==", "expectations") | first %}
 
     {% for mock in mocks %}
-      {% do mock.update({"unique_id": dbt_unit_testing.graph_node(mock.source_name, mock.name).unique_id}) %}
+      {% do mock.update({"unique_id": dbt_unit_testing.get_mock_unique_id(mock, test_configuration)}) %}
       {% if mock.options.include_missing_columns %}
         {% do dbt_unit_testing.enrich_mock_sql_with_missing_columns(mock, test_configuration.options) %}
       {% endif %}

@@ -73,12 +73,14 @@
   {{ return (graph.nodes[prefix ~ "." ~ model.package_name ~ "." ~ name])}}
 {% endmacro %}
 
-{% macro model_node (model_name) %}
+{% macro model_node (model_name, options) %}
   {% set node = nil
       | default(dbt_unit_testing.graph_node_by_prefix("model", model_name))
       | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name)) 
       | default(dbt_unit_testing.graph_node_by_prefix("seed", model_name)) %}
+
   {% if not node %}
+    {% if dbt_unit_testing.is_mock_all}
     {{ dbt_unit_testing.raise_error("Node " ~ model.package_name ~ "." ~ model_name ~ " not found.") }}
   {% endif %}
   {{ return (node) }}
@@ -88,11 +90,11 @@
   {{ return (graph.sources["source." ~ model.package_name ~ "." ~ source_name ~ "." ~ model_name]) }}
 {% endmacro %}
 
-{% macro graph_node(source_name, model_name) %}
+{% macro graph_node(source_name, model_name, options={}) %}
   {% if source_name %}
     {{ return (dbt_unit_testing.source_node(source_name, model_name)) }}
   {% else %}
-    {{ return (dbt_unit_testing.model_node(model_name)) }}
+    {{ return (dbt_unit_testing.model_node(model_name, options)) }}
   {% endif  %}
 {% endmacro %}
 
@@ -169,4 +171,8 @@
 
 {% macro raise_error(error_message) %}
   {{ exceptions.raise_compiler_error('\x1b[31m' ~ error_message ~ '\x1b[0m') }}
+{% endmacro %}
+
+{% macro is_mock_all(options={}) %}
+  {{ return (options.get("mock_all", true)) }}
 {% endmacro %}
