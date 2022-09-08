@@ -1,8 +1,22 @@
-{% macro build_model_complete_sql(model_node, mocks=[], options={}) %}
+{% macro build_cte_mocked_dependencies(mocks) %}
+  {% set cte_dependencies = [] %}
+
+  {% for mock in mocks %}
+    {% set cte_name = dbt_unit_testing.cte_name(mock) %}
+    {% set cte_sql = mock.input_values %}
+    {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
+    {% set cte_dependencies = cte_dependencies.append(cte) %}
+  {%- endfor -%}
+
+  {% do return(cte_dependencies) %}
+{% endmacro %}
+
+{% macro build_cte_dependencies(model_node, mocks, options) %}
   {% set models_to_exclude = mocks | rejectattr("options.include_missing_columns", "==", true) | map(attribute="unique_id") | list %}
   {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, models_to_exclude) %}
 
   {% set cte_dependencies = [] %}
+
   {% for node_id in model_dependencies %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% set mock = mocks | selectattr("unique_id", "==", node_id) | first %}
@@ -11,6 +25,18 @@
     {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
     {% set cte_dependencies = cte_dependencies.append(cte) %}
   {%- endfor -%}
+
+  {% do return (cte_dependencies) %}
+{% endmacro %}
+
+{% macro build_model_complete_sql(model_node, mocks=[], options={}) %}
+  {% set mockall = options.get("mock_all", false) %}
+
+  {% if mockall %}
+    cte_dependencies = dbt_unit_testing.build_cte_mocked_dependencies()
+  {% else %}
+    cte_dependencies = dbt_unit_testing.build_cte_dependencies(model_node, mocks, options)
+  {% endif %}
 
   {%- set model_complete_sql -%}
     {% if cte_dependencies %}
