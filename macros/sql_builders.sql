@@ -33,9 +33,9 @@
   {% set mockall = options.get("mock_all", false) %}
 
   {% if mockall %}
-    cte_dependencies = dbt_unit_testing.build_cte_mocked_dependencies()
+    {% set cte_dependencies = dbt_unit_testing.build_cte_mocked_dependencies() %}
   {% else %}
-    cte_dependencies = dbt_unit_testing.build_cte_dependencies(model_node, mocks, options)
+    {% set cte_dependencies = dbt_unit_testing.build_cte_dependencies(model_node, mocks, options) %}
   {% endif %}
 
   {%- set model_complete_sql -%}
