@@ -80,7 +80,6 @@
       | default(dbt_unit_testing.graph_node_by_prefix("seed", model_name)) %}
 
   {% if not node %}
-    {% if dbt_unit_testing.is_mock_all}
     {{ dbt_unit_testing.raise_error("Node " ~ model.package_name ~ "." ~ model_name ~ " not found.") }}
   {% endif %}
   {{ return (node) }}
