@@ -73,7 +73,7 @@
   {{ return (graph.nodes[prefix ~ "." ~ model.package_name ~ "." ~ name])}}
 {% endmacro %}
 
-{% macro model_node (model_name, options) %}
+{% macro model_node (model_name) %}
   {% set node = nil
       | default(dbt_unit_testing.graph_node_by_prefix("model", model_name))
       | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name)) 
@@ -89,11 +89,11 @@
   {{ return (graph.sources["source." ~ model.package_name ~ "." ~ source_name ~ "." ~ model_name]) }}
 {% endmacro %}
 
-{% macro graph_node(source_name, model_name, options={}) %}
+{% macro graph_node(source_name, model_name) %}
   {% if source_name %}
     {{ return (dbt_unit_testing.source_node(source_name, model_name)) }}
   {% else %}
-    {{ return (dbt_unit_testing.model_node(model_name, options)) }}
+    {{ return (dbt_unit_testing.model_node(model_name)) }}
   {% endif  %}
 {% endmacro %}
 
