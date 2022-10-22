@@ -18,7 +18,7 @@
       {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
     {% endif %}
     
-    select 1 from (select 1) as t where {{ not test_report.succeeded }}
+    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}
   {% endif %}
 {% endmacro %}
 
