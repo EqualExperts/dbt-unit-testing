@@ -10,3 +10,4 @@ venv/
 .venv/
 integration-tests/ci/.user.yml
 tmp
+.idea
