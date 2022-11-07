@@ -68,7 +68,18 @@
 
 {% macro build_node_sql(node, complete=false, use_database_models=false) %}
   {%- if use_database_models or node.resource_type in ('source', 'seed') -%}
-    {% set name = node.identifier if node.resource_type == "source" else node.name %}
+    {%- if node.resource_type == "source" %}
+      {% set name = node.identifier %}
+    {%- elif node.resource_type == "snapshot" %}
+      {%- if node.config.alias is not none %}
+        {% set name = node.config.alias %}
+      {%- else %}
+        {% set name = node.name %}
+      {%- endif %}
+    {%- else %}
+      {% set name = node.name %}
+    {%- endif %}
+
     select * from {{ dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) }} where false
   {%- else -%}
     {% if complete %}
