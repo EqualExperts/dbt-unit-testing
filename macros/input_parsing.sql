@@ -35,7 +35,9 @@
       {% set col_value = col %}
       {% set col_type = ns.col_types[loop.index-1] %}
       {% if col_type is defined %}
-        {% set col_value = "CAST(" ~ col_value ~ " as " ~ col_type ~ ")" %}
+        {% set col_value = "CAST('" ~ (col_value | replace("'", "")) ~ "' as " ~ col_type ~ ")" ~ " as " ~ ns.col_names[loop.index-1] %}
+      {% else %}
+        {% set col_value = col_value ~ " as " ~ ns.col_names[loop.index-1] %}
       {% endif %}
       {% set col_value = col_value ~ " as " ~ ns.col_names[loop.index-1] %}
       {% set ns.col_values = ns.col_values + [col_value] %}
