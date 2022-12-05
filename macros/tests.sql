@@ -174,7 +174,7 @@
 {% endmacro %}
 
 {% macro ref(model_name) %}
-  {% if 'unit-test' in config.get('tags',[]) %}
+  {% if 'unit-test' in config.get('tags',[]) or 'feature-test' in config.get('tags',[]) %}
       {{ return (dbt_unit_testing.ref_cte_name(model_name)) }}
   {% else %}
       {{ return (builtins.ref(model_name)) }}
@@ -182,7 +182,7 @@
 {% endmacro %}
 
 {% macro source(source, table_name) %}
-  {% if 'unit-test' in config.get('tags',[]) %}
+  {% if 'unit-test' in config.get('tags',[]) or 'feature-test' in config.get('tags',[]) %}
       {{ return (dbt_unit_testing.source_cte_name(source, table_name)) }}
   {% else %}
       {{ return (builtins.source(source, table_name)) }}
