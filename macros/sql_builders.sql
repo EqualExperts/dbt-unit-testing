@@ -1,6 +1,10 @@
 {% macro build_model_complete_sql(model_node, mocks=[], options={}) %}
   {% set models_to_exclude = mocks | rejectattr("options.include_missing_columns", "==", true) | map(attribute="unique_id") | list %}
-  {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, models_to_exclude) %}
+
+  {# when using the database models, there is no need to build full lineage #}
+  {% set build_full_lineage = not options.use_database_models %}
+
+  {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, models_to_exclude, build_full_lineage) %}
 
   {% set cte_dependencies = [] %}
   {% for node_id in model_dependencies %}
@@ -48,12 +52,13 @@
   {{ return (dbt_unit_testing.quote_identifier(cte_name)) }}
 {% endmacro %}
 
-{% macro build_model_dependencies(node, models_to_exclude) %}
+{% macro build_model_dependencies(node, models_to_exclude, build_full_lineage=True) %}
+
   {% set model_dependencies = [] %}
   {% for node_id in node.depends_on.nodes %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% if node.unique_id not in models_to_exclude %}
-      {% if node.resource_type in ('model','snapshot') %}
+      {% if node.resource_type in ('model','snapshot') and build_full_lineage %}
         {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
         {% for dependency_node_id in child_model_dependencies %}
           {{ model_dependencies.append(dependency_node_id) }}
