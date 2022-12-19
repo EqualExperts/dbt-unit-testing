@@ -67,6 +67,7 @@
   {% set model_node = dbt_unit_testing.model_node(test_configuration.model_name) %}
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
+  {% set sql_header = test_configuration.options.get("sql_header") %}
 
   {%- set actual_query -%}
     select count(1) as count, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
@@ -77,6 +78,10 @@
   {% endset %}
 
   {%- set test_query -%}
+    {%- if sql_header %}
+    {{sql_header}}
+    {% endif -%}
+
     with expectations as (
       {{ expectations_query }}
     ),
@@ -134,8 +139,13 @@
   {% set actual_query = test_queries.actual_query %}
   {% set expectations_query = test_queries.expectations_query %}
   {% set test_query = test_queries.test_query %}
+  {% set sql_header = test_configuration.options.get("sql_header") %}
 
   {%- set count_query -%}
+    {%- if sql_header %}
+    {{sql_header}}
+    {% endif -%}
+
     select * FROM 
       (select count(1) as expectation_count from (
         {{ expectations_query }}
