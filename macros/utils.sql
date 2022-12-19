@@ -66,7 +66,9 @@
 {% endmacro %}
 
 {% macro node_by_id (node_id) %}]
-  {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
+  {{ return (graph.nodes[node_id] if node_id in graph.nodes else
+             graph.sources[node_id] if node_id in graph.sources else
+             graph.metrics[node_id]) }}
 {% endmacro %}
 
 {% macro graph_node_by_prefix (prefix, name) %}

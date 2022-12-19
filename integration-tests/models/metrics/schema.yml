@@ -1,0 +1,31 @@
+---
+version: 2
+
+metrics:
+  - name: average_order_amount
+    label: Average Order Amount
+    model: ref('metrics_mart_customers')
+    calculation_method: average
+    expression: total_amount
+    timestamp: most_recent_order
+    time_grains: [day, all_time]
+
+  - name: total_order_amount
+    label: Total Order Amount
+    model: ref('metrics_mart_customers')
+    calculation_method: sum
+    expression: total_amount
+    timestamp: most_recent_order
+    time_grains: [day, all_time]
+
+  - name: generic_sum
+    description: >-
+      This metric references another table different from the previous two in
+      order to test if the whole metric models graph dependencies is being
+      correctly mocked and tracked during the testing phase
+    label: Generic Sum
+    model: ref('metrics_model_stg_generic')
+    calculation_method: sum
+    expression: value
+    timestamp: date
+    time_grains: [all_time]

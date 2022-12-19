@@ -4,7 +4,10 @@
   {# when using the database models, there is no need to build full lineage #}
   {% set build_full_lineage = not options.use_database_models %}
 
-  {% set model_dependencies = dbt_unit_testing.build_model_dependencies(model_node, models_to_exclude, build_full_lineage) %}
+  {# `metrics_dependencies` are used to update the final SQL with the the proper metric references #}
+  {% set model_dependencies, metrics_dependencies = dbt_unit_testing.build_model_dependencies(
+    model_node, models_to_exclude, build_full_lineage)
+  %}
 
   {% set cte_dependencies = [] %}
   {% for node_id in model_dependencies %}
@@ -25,7 +28,28 @@
     select * from ({{ dbt_unit_testing.render_node(model_node) }} {{ "\n" }} ) as t
   {%- endset -%}
 
+  {% set model_complete_sql = dbt_unit_testing.replace_metric_refs(model_complete_sql, metrics_dependencies) %}
   {% do return(model_complete_sql) %}
+{% endmacro %}
+
+{# As metrics are defined directly in yaml files, we can't replace their `ref` with the
+   macro `dbt_unit_testing.ref` so the translation in the final SQL is still required
+#}
+{% macro replace_metric_refs(model_sql, model_dependencies) %}
+  {% set ns = namespace(model_sql = model_sql) %}
+
+  {# jump 'calendar' node as it's not mocked #}
+  {% for node_id in model_dependencies if 'calendar' not in node_id %}
+    {% set node = dbt_unit_testing.node_by_id(node_id) %}
+    {% set relation = api.Relation.create(
+        database = node.database,
+        schema = node.schema,
+        identifier = node.alias
+      )
+    %}
+    {% set ns.model_sql = ns.model_sql | replace(relation, dbt_unit_testing.ref(node.alias)) %}
+  {% endfor %}
+  {% do return(ns.model_sql) %}
 {% endmacro %}
 
 {% macro cte_name(node) %}
@@ -53,22 +77,32 @@
 {% endmacro %}
 
 {% macro build_model_dependencies(node, models_to_exclude, build_full_lineage=True) %}
-
-  {% set model_dependencies = [] %}
+  {% set model_dependencies, metrics_dependencies = [], [] %}
   {% for node_id in node.depends_on.nodes %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
+    {% if node.resource_type == 'metric' %}
+      {# We need to extract from the node in which metric depends on instead, not the metric
+         node itself as metrics resources are not models, they are definitions that points to models.
+         As all metrics can only be dependent on exactly one node then we index at point [0] directly.
+      #}
+      {% set metric_dependency_node_id = node.depends_on.nodes[0] %}
+      {{ metrics_dependencies.append(metric_dependency_node_id) }}
+      {% set node = dbt_unit_testing.node_by_id(metric_dependency_node_id) %}
+    {% endif %}
     {% if node.unique_id not in models_to_exclude %}
-      {% if node.resource_type in ('model','snapshot') and build_full_lineage %}
-        {% set child_model_dependencies = dbt_unit_testing.build_model_dependencies(node) %}
+      {% if node.resource_type in ('model', 'snapshot') and build_full_lineage %}
+        {% set child_model_dependencies, child_metric_depedencies = dbt_unit_testing.build_model_dependencies(node, models_to_exclude) %}
         {% for dependency_node_id in child_model_dependencies %}
           {{ model_dependencies.append(dependency_node_id) }}
         {% endfor %}
+        {% for dependency_metric_node_id in child_metric_dependencies %}
+          {{ metric_dependencies.append(dependency_node_id) }}
+        {% endfor %}
       {% endif %}
     {% endif %}
-    {{ model_dependencies.append(node_id) }}
+    {{ model_dependencies.append(node.unique_id) }}
   {% endfor %}
-
-  {{ return (model_dependencies | unique | list) }}
+  {{ return ((model_dependencies | unique | list, metrics_dependencies | unique | list)) }}
 {% endmacro %}
 
 {% macro build_node_sql(node, complete=false, use_database_models=false) %}

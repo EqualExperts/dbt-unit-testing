@@ -27,10 +27,16 @@ VENV_FOLDER="$SCRIPT_DIR/$VENV_NAME"
 
 rm -rf "$VENV_FOLDER"
 python3 -m venv "$VENV_FOLDER"
+source "$VENV_FOLDER/bin/activate"
 
 pip install --upgrade pip setuptools
 pip install "dbt-$PROFILE==$DBT_VERSION"
 
-source "$VENV_FOLDER/bin/activate"
+if [ "$DBT_VERSION" = "1.2.0" ]; then
+  cp integration-tests/packages_1_2_0.yml integration-tests/packages.yml
+  cp -r integration-tests/tests/fixtures/metrics integration-tests/models/metrics
+else
+  cp integration-tests/packages_1_3_b1.yml integration-tests/packages.yml
+fi
 
 "$SCRIPT_DIR/$TEST_SCRIPT.sh" "$PROFILE"

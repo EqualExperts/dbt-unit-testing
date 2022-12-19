@@ -4,9 +4,50 @@
     )
 }}
 
+{% call dbt_unit_testing.test('metrics_customers', 'metrics table should yield expected result') %}
+
+  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
+    select 1 as customer_id, 'first_name' as first_name, 'last_name' as last_name
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_ref ('stg_orders') %}
+    select 1 as customer_id, 1 as order_id, '2023-01-01'::Timestamp as order_date
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_ref ('stg_payments') %}
+     select 1 as order_id, 1.5 as amount
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect() %}
+    select '2023-01-01'::Timestamp as metric_start_date, '2023-01-01'::Timestamp as metric_end_date, 1.5 as average_order_amount, 1.5 as total_order_amount
+  {% endcall %}
+{% endcall %}
+
+UNION ALL
+
+{% call dbt_unit_testing.test('customers', 'customers table should return expected result') %}
+
+  {% call dbt_unit_testing.mock_ref ('stg_customers') %}
+    select 1 as customer_id, 'first_name' as first_name, 'last_name' as last_name
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_ref ('stg_orders') %}
+    select 1 as customer_id, 1 as order_id, '2023-01-01'::Timestamp as order_date
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_ref ('stg_payments') %}
+     select 1 as order_id, 1.5 as amount
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect() %}
+    select 1 as customer_id, 'first_name' as first_name, 'last_name' as last_name, '2023-01-01'::Timestamp as most_recent_order, 1 as number_of_orders, 1.5 as customer_lifetime_value
+  {% endcall %}
+{% endcall %}
+
+UNION ALL
 
 {% call dbt_unit_testing.test('customers', 'should show customer_id without orders') %}
-  
+
   {% call dbt_unit_testing.mock_ref ('stg_customers') %}
     select 1 as customer_id, '' as first_name, '' as last_name
   {% endcall %}
@@ -18,7 +59,7 @@
   {% call dbt_unit_testing.mock_ref ('stg_payments') %}
      select null::numeric as order_id, null::numeric as amount where false
   {% endcall %}
-  
+
   {% call dbt_unit_testing.expect() %}
     select 1 as customer_id
   {% endcall %}
@@ -27,7 +68,7 @@
 UNION ALL
 
 {% call dbt_unit_testing.test('customers', 'should show customer name') %}
-  
+
   {% call dbt_unit_testing.mock_ref ('stg_customers') %}
     select null::Numeric as customer_id, 'John' as first_name, 'Doe' as last_name
   {% endcall %}
@@ -39,7 +80,7 @@ UNION ALL
   {% call dbt_unit_testing.mock_ref ('stg_payments') %}
      select null::numeric as order_id, null::numeric as amount where false
   {% endcall %}
-  
+
   {% call dbt_unit_testing.expect() %}
     select null::Numeric as customer_id, 'John' as first_name, 'Doe' as last_name
   {% endcall %}
