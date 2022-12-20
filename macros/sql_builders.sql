@@ -38,8 +38,7 @@
 {% macro replace_metric_refs(model_sql, model_dependencies) %}
   {% set ns = namespace(model_sql = model_sql) %}
 
-  {# jump 'calendar' node as it's not mocked #}
-  {% for node_id in model_dependencies if 'calendar' not in node_id %}
+  {% for node_id in model_dependencies %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% set relation = api.Relation.create(
         database = node.database,
@@ -79,6 +78,10 @@
 {% macro build_model_dependencies(node, models_to_exclude, build_full_lineage=True) %}
   {% set model_dependencies, metrics_dependencies = [], [] %}
   {% for node_id in node.depends_on.nodes %}
+    {# store metrics calendar models for using as a proper relation later on #}
+    {% if 'calendar' in node_id %}
+      {{ metrics_dependencies.append(node_id) }}
+    {% endif %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% if node.resource_type == 'metric' %}
       {# We need to extract from the node in which metric depends on instead, not the metric

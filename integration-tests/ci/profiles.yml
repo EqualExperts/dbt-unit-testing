@@ -7,10 +7,10 @@ integration_tests:
       project: "{{ env_var('GOOGLE_CLOUD_PROJECT') }}"
       dataset: dbt_unit_testing
       threads: 1
-    
+
     postgres:
       type: postgres
-      host: localhost
+      host: postgres
       user: postgres
       pass: postgres
       port: 5432
@@ -18,7 +18,7 @@ integration_tests:
       dbname: postgres
       threads: 1
 
-    snowflake:  
+    snowflake:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_TEST_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_TEST_USER') }}"
