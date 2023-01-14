@@ -10,7 +10,7 @@ integration_tests:
 
     postgres:
       type: postgres
-      host: postgres
+      host: localhost
       user: postgres
       pass: postgres
       port: 5432
