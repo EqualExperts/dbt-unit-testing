@@ -3,7 +3,7 @@ jaffle_shop:
   outputs:
     postgres:
       type: postgres
-      host: localhost
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
       user: postgres
       pass: postgres
       port: 5432
