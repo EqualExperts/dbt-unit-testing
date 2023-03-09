@@ -1,9 +1,12 @@
 {{ config(tags=['unit-test', 'macro_test', 'postgres']) }}
 
-{% call dbt_unit_testing.macro_test('sanitize None throws') %}
-    {# TODO: How can we test expecting macro to raise exception?
-    {{ dbt_unit_testing.assert_equal(dbt_unit_testing.sanitize(None), '') }}
-    #}
+{% call dbt_unit_testing.macro_test('sanitize None raises exception') %}
+    {# TODO: How can we test expecting macro to raise exception? 
+     # being able to do something like this would be great:
+     #
+     # {% call(msg) dbt_unit_testing.assert_raises_compiler_error() %}
+     #     {{ dbt_unit_testing.sanitize(None) }}
+     # {% endcall %} #}
 {% endcall %}
 
 UNION ALL

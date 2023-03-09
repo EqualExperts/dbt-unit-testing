@@ -112,6 +112,23 @@
     {%- endif -%}
 {%- endmacro %}
 
+{# TODO: I really wish we could do something like this, but the approach here
+ # has one major drawback: execution continues through the code under test
+ # after it tries to raise an exception. Also, mocking only works if the exception
+ # is raised from a jinja macro (not if it comes from python code).
+ #
+ # -- Returns an error message if caller() does not raise a compiler error.
+ # {% macro assert_raises_compiler_error() -%}
+ #     {%- set m = dbt_unit_testing.mock_macro(
+ #         exceptions, 'raise_compiler_error', return_value='') -%}
+ #     {%- do caller() -%} 
+ #     {%- if m.calls|length == 0 -%}
+ #         Expected exception to be raised.
+ #         No exception was raised.
+ #     {%- endif -%}
+ # {%- endmacro %} 
+ #}
+
 -- Mocks the implementation of a macro and returns a mock object.
 {% macro mock_macro(package, macro_name, mock_fn=None, return_value=None) %}
   {% set m = {
