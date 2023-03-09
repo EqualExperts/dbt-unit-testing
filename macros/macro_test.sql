@@ -148,6 +148,31 @@
   {{ return(m) }}
 {% endmacro %}
 
+{# make_func creates a function inside the given dict, o, with the given name.
+ # The implementation of the function is taken from the call body.
+ #
+ # This is useful for making dicts that feel like objects.
+ #
+ # Example:
+ #
+ #    {%- macro new_square() -%}
+ #        {%- set square = {'length': 0} -%}
+ #
+ #        {%- call(length) dbt_unit_testing.make_func(square, 'set_length') -%}
+ #            {%- do square.update({'length': length}) -%}
+ #        {%- endcall -%}
+ #        
+ #        {%- call() dbt_unit_testing.make_func(square, 'area') -%}
+ #            {{ (square.length * square.length) }}
+ #        {%- endcall -%}
+ #
+ #        {% do return(square) %}
+ #    {%- endmacro -%}
+ #
+ #    {%- set s = new_square() -%}
+ #    {%- do s.set_length(10) -%}
+ #    {{ square.area() }} 
+ #}
 {% macro make_func(o, name) %}
   {% do o.update({name: caller}) %}
 {% endmacro %}
