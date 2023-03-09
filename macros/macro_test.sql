@@ -8,7 +8,7 @@
 -- messages and feel much like the model tests that are written
 -- with dbt_unit_testing.test()
 
--- Runs a unit test.
+-- macro_test runs a unit test.
 --
 -- Use with a {% call macro_test... %} test body {% endcall %} from .sql files
 -- in the tests directory.
@@ -85,10 +85,11 @@
         {% if caller and not mock_fn %}
             {% set mock_fn = caller %}
         {% endif %}
-        {% do t.mocks.append(
-            dbt_unit_testing.mock_macro(pkg, name, mock_fn=mock_fn, return_value=return_value)
-        ) %}
-        {# TODO: return the mock dict when https://github.com/dbt-labs/dbt-core/issues/7144 is fixed. #}
+        {% set m = dbt_unit_testing.mock_macro(
+            pkg, name, mock_fn=mock_fn, return_value=return_value) %}
+        {% do t.mocks.append(m) %}
+        {# TODO: return m when https://github.com/dbt-labs/dbt-core/issues/7144 is fixed. #}
+        {# {{ return(m) }} #}
     {% endcall %}
 
     {{ return(t) }}
@@ -129,17 +130,16 @@
   {# If mock_fn is given, use it, otherwise, create a mock_fn 
    # that returns return_value. #}
   {% if not mock_fn %}
-    {# TODO: Change return to {{ return(m.return_value) }} when
-     # https://github.com/dbt-labs/dbt-core/issues/7144 is fixed.
-     # For now, we can only mock return values for strings.
-     #}
     {%- call dbt_unit_testing.make_func(m, 'mock_fn') -%}
       {%- set c = {
         'args': varargs,
         'kwargs': kwargs,
       } -%}
       {%- do m.calls.append(c) -%}
-      {{ m.return_value }}
+    {# TODO: Why can I return here unaffected by 
+     # https://github.com/dbt-labs/dbt-core/issues/7144 ?
+     #}
+      {{ return(m.return_value) }}
     {%- endcall -%}
   {% endif %}
 

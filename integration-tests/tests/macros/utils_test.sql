@@ -64,6 +64,17 @@ UNION ALL
 
 UNION ALL
 
+{% call dbt_unit_testing.macro_test('example C.2: return_value can be something other than string') %}
+    {% set m = dbt_unit_testing.mock_macro(dbt_unit_testing, 'sanitize', return_value=[1, 2]) %}
+    
+    {{ dbt_unit_testing.assert_equal(
+        dbt_unit_testing.mock_example('foo'), [1, 2]) }}
+
+    {% do m.restore() %}
+{% endcall %}
+
+UNION ALL
+
 {% call(t) dbt_unit_testing.macro_test_with_t('example D: using t helper, test runner cleans up') %}
     {% do t.mock(dbt_unit_testing, 'sanitize', return_value='ttest') %}
     {{ t.assert_equal(
@@ -74,11 +85,11 @@ UNION ALL
 
 {% call(t) dbt_unit_testing.macro_test_with_t('example E: using t helper, mock using call') %}
     {% call(s) t.mock(dbt_unit_testing, 'sanitize') -%}
-        mock with call
         {%- do print('sanitize called with %s' % (s|trim)) -%}
+        {{ return({'mock_dict': 42}) }}
     {%- endcall %}
     {{ dbt_unit_testing.assert_equal(
-        dbt_unit_testing.mock_example('foo'), 'mock with call') }}
+        dbt_unit_testing.mock_example('foo'), {'mock_dict': 42}) }}
 {% endcall %}
 
 UNION ALL
