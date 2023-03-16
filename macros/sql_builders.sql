@@ -23,6 +23,7 @@
     {%- endif -%}
     {{ "\n" }}
     select * from ({{ dbt_unit_testing.render_node(model_node) }} {{ "\n" }} ) as t
+    SETTINGS join_algorithm='hash'
   {%- endset -%}
 
   {% do return(model_complete_sql) %}

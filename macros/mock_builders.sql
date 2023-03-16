@@ -53,7 +53,8 @@
   {% set model_columns = dbt_unit_testing.get_from_cache("COLUMNS", model_node.name) %}
   {% if not model_columns %}
     {% set model_sql = dbt_unit_testing.build_node_sql(model_node, complete=true, use_database_models=options.use_database_models) %}
-    {% set model_columns = dbt_unit_testing.extract_columns_list(model_sql) %}
+--     {% set model_columns = dbt_unit_testing.extract_columns_list(model_sql) %}
+    {% set model_columns = model_node.columns.values() | map(attribute='name') | list %}
     {{ dbt_unit_testing.cache("COLUMNS", model_node.name, model_columns)}}
   {% else %}
     {{ dbt_unit_testing.verbose("CACHE HIT for " ~ model_node.name ~ " COLUMNS") }}
