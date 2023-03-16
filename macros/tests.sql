@@ -3,21 +3,21 @@
 
   {% if execute %}
     {% set test_configuration = {
-      "model_name": model_name, 
-      "description": test_description, 
-      "options": dbt_unit_testing.merge_configs([options])} 
+      "model_name": model_name,
+      "description": test_description,
+      "options": dbt_unit_testing.merge_configs([options])}
     %}
     {% set mocks_and_expectations_json_str = caller() %}
 
     {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
-    
+
     {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
     {% set test_report = dbt_unit_testing.build_test_report(test_configuration) %}
 
     {% if not test_report.succeeded %}
       {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
     {% endif %}
-    
+
     select 1 as a from (select 1) as t where {{ not test_report.succeeded }}
   {% endif %}
 {% endmacro %}
@@ -69,11 +69,11 @@
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
 
   {%- set actual_query -%}
-    select count(1) as count, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
+    select count(1) as count123, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
   {% endset %}
 
   {%- set expectations_query -%}
-    select count(1) as count, {{columns}} from ({{ expectations.input_values }}) as s group by {{ columns }}
+    select count(1) as count123, {{columns}} from ({{ expectations.input_values }}) as s group by {{ columns }}
   {% endset %}
 
   {%- set test_query -%}
@@ -85,15 +85,15 @@
     ),
 
     extra_entries as (
-    select '+' as diff, count, {{columns}} from actual
+    select '+' as diff, count123, {{columns}} from actual
     {{ except() }}
-    select '+' as diff, count, {{columns}} from expectations),
+    select '+' as diff, count123, {{columns}} from expectations),
 
     missing_entries as (
-    select '-' as diff, count, {{columns}} from expectations
+    select '-' as diff, count123, {{columns}} from expectations
     {{ except() }}
-    select '-' as diff, count, {{columns}} from actual)
-    
+    select '-' as diff, count123, {{columns}} from actual)
+
     select * from extra_entries
     UNION ALL
     select * from missing_entries
@@ -136,7 +136,7 @@
   {% set test_query = test_queries.test_query %}
 
   {%- set count_query -%}
-    select * FROM 
+    select * FROM
       (select count(1) as expectation_count from (
         {{ expectations_query }}
       ) as exp) as exp_count,
