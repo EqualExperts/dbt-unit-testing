@@ -9,6 +9,6 @@ fi
 
 PROFILE="$1"
 
-./run-tests-on-dbt-version.sh "run-integration-tests" "$PROFILE" "1.2.0"
-./run-tests-on-dbt-version.sh "run-integration-tests" "$PROFILE" "1.3.0b1"
-./run-tests-on-dbt-version.sh "run-integration-tests" "$PROFILE" "1.3.1"
+
+./run-tests-on-dbt-version.sh "run-integration-tests" "$PROFILE" "1.3.0"
+./run-tests-on-dbt-version.sh "run-integration-tests" "$PROFILE" "1.4.0"

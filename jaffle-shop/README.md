@@ -29,20 +29,7 @@ If you want to run the tests on your machine and play with the examples:
 
 1. You need to have docker.
 2. Clone this repository.
-3. Change jaffle_shop [profiles.yml](./ci/profiles.yml)
-```diff
-   postgres:
-      type: postgres
--     host: localhost
-+     host: postgres
-      user: postgres
-      pass: postgres
-      port: 5432
-      schema: dbt_unit_testing
-      dbname: postgres
-      threads: 1
+3. Use make to run
 ```
-4. Use make to run
-```
-> make run
+make
 ```

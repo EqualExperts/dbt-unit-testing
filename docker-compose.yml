@@ -5,6 +5,7 @@ services:
     image: python:3.8.5
     environment:
       - GOOGLE_CLOUD_PROJECT
+      - POSTGRES_HOST=postgres
     entrypoint: "${RUN_SCRIPT} ${TARGET}"
     working_dir: /repo
     volumes:
