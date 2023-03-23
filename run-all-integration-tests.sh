@@ -9,6 +9,7 @@ fi
 
 PROFILE="$1"
 
+# Source the script that contains the run_tests function and versions
+source ./run-tests-helper.sh
 
-./run-tests-on-dbt-version.sh "run-integration-tests" "$PROFILE" "1.3.0"
-./run-tests-on-dbt-version.sh "run-integration-tests" "$PROFILE" "1.4.0"
+run_tests "run-integration-tests" "$PROFILE"
