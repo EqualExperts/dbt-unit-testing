@@ -72,3 +72,46 @@
   {%- endif -%}
   {% do mock.update({"input_values": input_values_sql}) %}
 {% endmacro %}
+
+{%- macro mock_template(model_name, project='') -%}
+  {%- set unique_id = "model." ~project~ "." ~model_name -%}
+  {%- set src_models = [] -%}
+  {%- set ref_models = [] -%}
+  {%- set depends_on = [] -%}
+  {%- for model in graph.nodes.values() | selectattr("resource_type", "equalto", "model") | selectattr("unique_id", "equalto", unique_id) -%}
+    {%- for ref_model in model.refs if ref_model not in  ref_models -%}
+      {{ ref_models.append(ref_model) or "" }}
+    {%- endfor -%}
+    {%- for src_model in model.sources if src_model not in  src_models -%}
+      {{ src_models.append(src_model) or "" }}
+    {%- endfor -%}
+    {%- for ref_model in ref_models  -%}
+      {{ depends_on.append("-- depends_on: {{ ref('" ~ ref_model[0] ~ "') }}") or "" }}
+    {%- endfor -%}
+    {{ depends_on.append("") or "" }}
+    {{ depends_on.append("") or "" }}
+    {{ depends_on.append("{% call dbt_unit_testing.test('" ~model_name~ "', '<PUT DESCRIPTION HERE>') %}") or "" }}
+    {{ depends_on.append("") or "" }}
+    {%- for ref_model in ref_models -%}
+      {{ depends_on.append("  {% call dbt_unit_testing.mock_ref('" ~ref_model[0]~ "') %}") or "" }}
+        {{ depends_on.append("    -- PUT YOUR MOCK DATA HERE") or "" }}
+      {{ depends_on.append("  {% endcall %}") or "" }}
+      {{ depends_on.append("") or "" }}
+    {%- endfor -%}
+    {%- for src_model in src_models -%}
+      {{ depends_on.append("  {% call dbt_unit_testing.mock_source('" ~src_model[0]~"','"~ src_model[1] ~ "') %}") or "" }}
+        {{ depends_on.append("    -- PUT YOUR MOCK DATA HERE") or "" }}
+      {{ depends_on.append("  {% endcall %}") or "" }}
+      {{ depends_on.append("") or "" }}
+    {%- endfor -%}
+    {{ depends_on.append("  {% call dbt_unit_testing.expect() %}") or "" }}
+      {{ depends_on.append("    -- PUT YOUR MOCK EXPECTATION DATA HERE") or "" }}
+    {{ depends_on.append("  {% endcall %}") or "" }}
+    {{ depends_on.append("") or "" }}
+    {{ depends_on.append("{% endcall %}") or "" }}
+  {%- endfor -%}
+  {{ depends_on | join("\n") }}
+  {%- for statement in depends_on -%}
+    {{ print(statement) }}
+  {%- endfor -%}
+{%- endmacro -%}
