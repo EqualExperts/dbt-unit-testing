@@ -5,7 +5,7 @@
 
 Dbt Unit Testing is a dbt package that provides support for unit testing in [dbt](https://github.com/dbt-labs/dbt).
 
-You can test models independently by mocking their dependencies (models, sources, snapshots, seeds).
+You can test models independently by mocking their dependencies (models, sources, snapshots, seeds, metrics).
 
 - [Installation](#installation)
 - [More About Dbt Unit Testing](#more-about-dbt-unit-testing)
@@ -450,7 +450,23 @@ In this situation, you need to add this line to the top of your **test** (**not 
 
 ```
 
+- Tests involving metric tables requires the addition of metrics dependencies on the **test.sql** file definition (again, **not the model!**):
 
+```jinja
+-- depends on: {{ ref(var('dbt_metrics_calendar_model', 'dbt_metrics_default_calendar')) }}
+{{
+    config(
+        tags=['unit-test']
+    )
+}}
+```
+
+  This is optional if there's a macro at the project level that replaces the `ref` definition:
+```jinja
+{% macro ref(model_name) %}
+   {{ return(dbt_unit_testing.ref(model_name)) }}
+{% endmacro %}
+```
 
 # Compatibility
 
