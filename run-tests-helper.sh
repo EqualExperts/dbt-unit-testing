@@ -5,7 +5,7 @@ function run_tests() {
   local PROFILE=$2
 
   if [ "$PROFILE" == "postgres" ]; then
-    VERSIONS="1.3.3 1.4.0"
+    VERSIONS="1.3.3 1.4.5"
   elif [ "$PROFILE" == "bigquery" ]; then
     VERSIONS="1.3.2"
   elif [ "$PROFILE" == "snowflake" ]; then
