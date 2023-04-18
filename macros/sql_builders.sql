@@ -22,7 +22,15 @@
       {{ cte_dependencies | join(",\n") }}
     {%- endif -%}
     {{ "\n" }}
-    select * from ({{ dbt_unit_testing.render_node(model_node) }} {{ "\n" }} ) as t
+
+    {% set rendered_sql = dbt_unit_testing.render_node(model_node) -%}
+    {%- if options.cte_name is defined -%}
+      {% set model_sql = dbt_unit_testing.select_from_cte(rendered_sql, options.cte_name) %}
+    {%- else -%}
+      {% set model_sql = rendered_sql %}
+    {%- endif -%}
+
+    select * from ({{ model_sql }} {{ "\n" }} ) as t
   {%- endset -%}
 
   {% do return(model_complete_sql) %}
@@ -92,5 +100,29 @@
     {%- else -%}
       {{ dbt_unit_testing.render_node(node) ~ "\n"}}
     {%- endif -%}
+  {%- endif -%}
+{% endmacro %}
+
+{% macro select_from_cte(rendered_model_sql, cte_name) %}
+  {#
+    Return the model SQL with the `select * from final` call overridden with
+    the given CTE name.
+
+    This provides a way to unit test the CTEs within a model. This expects
+    the model to end with  `select * from final` as per the the dbt-labs
+    style guide:
+
+    - https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#ctes
+
+    If the model does not end with `select * from final`, this will raise a
+    compiler error.
+  #}
+  {%- set re = modules.re -%}
+  {%- set pattern = "(from) final" -%}
+
+  {%- if re.search(pattern, rendered_model_sql, flags=re.IGNORECASE) is none -%}
+    {{ exceptions.raise_compiler_error("Unable to find the `select * from final` block in the model SQL") }}
+  {%- else -%}
+    {{ return( re.sub(pattern, "\\1 " ~ cte_name, rendered_model_sql, flags=re.IGNORECASE) ) }}
   {%- endif -%}
 {% endmacro %}
