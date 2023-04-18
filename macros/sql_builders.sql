@@ -118,7 +118,7 @@
     compiler error.
   #}
   {%- set re = modules.re -%}
-  {%- set pattern = "(select\s+\*\s+from)\s+final\b" -%}
+  {%- set pattern = "(select\s+\*\s+from)\s+final" -%}
 
   {%- if re.search(pattern, rendered_model_sql, flags=re.IGNORECASE) is none -%}
     {{ exceptions.raise_compiler_error("Unable to find `select * from final` in the model SQL") }}
