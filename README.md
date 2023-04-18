@@ -380,6 +380,7 @@ from {{ ref('some_model') }}
 | **type_separator**          | Defines the type separator for csv format                       | :: | project/test       |
 | **use_qualified_sources**   | Use qualified names (source_name + table_name) for sources when building the CTEs for the test query. It allows you to have source models with the same name in different sources/schema.                         | false | project            |
 | **disable_cache**           | Disable cache                                                   | false| project            |
+| **cte_name**                | Return the result set of a CTE in the model being tested, rather than the final output. Allows unit tests to be written for given CTEs within a model. If no CTE is provided, the final output will be used (like normal). This assumes that the last line in the model SQL is `select * from final` as per [the dbt-labs style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#ctes) | none | test |
 
 Notes:
 
