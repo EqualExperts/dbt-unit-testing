@@ -118,10 +118,10 @@
     compiler error.
   #}
   {%- set re = modules.re -%}
-  {%- set pattern = "(from) final" -%}
+  {%- set pattern = "(select\s+\*\s+from)\s+final\b" -%}
 
   {%- if re.search(pattern, rendered_model_sql, flags=re.IGNORECASE) is none -%}
-    {{ exceptions.raise_compiler_error("Unable to find the `select * from final` block in the model SQL") }}
+    {{ exceptions.raise_compiler_error("Unable to find `select * from final` in the model SQL") }}
   {%- else -%}
     {{ return( re.sub(pattern, "\\1 " ~ cte_name, rendered_model_sql, flags=re.IGNORECASE) ) }}
   {%- endif -%}
