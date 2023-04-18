@@ -371,7 +371,7 @@ from {{ ref('some_model') }}
 ## Available Options
 
 | option                      | description                     | default              | scope*              |
-|-----------------------------|---------------------------------|--------------------|--------------------|
+|-----------------------------|---------------------------------|----------------------|---------------------|
 | **include_missing_columns** | Use the definition of the model to grab the columns not specified in a mock. The columns will be added automatically with *null* values (this option will increase the number of roundtrips to the database when running the test).                          | false | project/test/mock       |
 | **use_database_models**     | Use the models in the database instead of the model SQL. <br> This option is used to simplify the final test query if needed                                      | false | project/test/mock       |
 | **input_format**            | **sql**: use *SELECT* statements to define the mock values. <br> <br> *SELECT 10::int as c1, 20 as c2 <br> UNION ALL <br>  SELECT 30::int as c1, 40 as c2* <br> <br> **csv**: Use tabular form to specify mock values. <br> <br> c1::int \| c2 <br> 10 \| 20 <br> 30 \| 40                            | sql | project/test       |
@@ -379,7 +379,8 @@ from {{ ref('some_model') }}
 | **line_separator**          | Defines the line separator for csv format                       | \\n | project/test       |
 | **type_separator**          | Defines the type separator for csv format                       | :: | project/test       |
 | **use_qualified_sources**   | Use qualified names (source_name + table_name) for sources when building the CTEs for the test query. It allows you to have source models with the same name in different sources/schema.                         | false | project            |
-| **disable_cache**        | Disable cache                             | false| project            |
+| **disable_cache**           | Disable cache                                                   | false| project            |
+
 Notes:
 
 - **scope** is the place where the option can be defined:
