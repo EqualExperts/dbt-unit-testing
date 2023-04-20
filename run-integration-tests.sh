@@ -27,5 +27,6 @@ dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE" --exclude tag
 dbt seed --target "$PROFILE" --select seeds/existing_sources
 # create models in the database for tests that depends on database models
 dbt run --target "$PROFILE" --select models/complex_hierarchy
+dbt run --target "$PROFILE" --select models/model_in_database.sql
 # run tests with database dependency
 dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE",tag:db-dependency
