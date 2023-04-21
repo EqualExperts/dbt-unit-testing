@@ -154,19 +154,42 @@
   {% if dbt_unit_testing.config_is_true('disable_cache') %}
     {{ return (nil) }}
   {% else %}
-    {% set cache = graph.get("__DUT_CACHE__", {}) %}
+    {% set cache = context.get("__DUT_CACHE__", {}) %}
     {% set scope = cache.get(scope_key, {}) %}
     {% do scope.update({key: value}) %}
     {% do cache.update({scope_key: scope}) %}
-    {% do graph.update({"__DUT_CACHE__": cache}) %}
+    {% do context.update({"__DUT_CACHE__": cache}) %}
   {% endif %}
 {% endmacro %}
 
 {% macro get_from_cache(scope, key) %}
-  {% set cache = graph.get("__DUT_CACHE__", {}).get(scope, {}) %}
+  {% set cache = context.get("__DUT_CACHE__", {}).get(scope, {}) %}
   {{ return (cache[key]) }}
 {% endmacro %}
 
 {% macro raise_error(error_message) %}
   {{ exceptions.raise_compiler_error('\x1b[31m' ~ error_message ~ '\x1b[0m') }}
 {% endmacro %}
+
+{% macro set_test_context(key, value) %}
+  {% set test_context = context.get("__DUT_TEST_CONTEXT__", {}) %}
+  {% set test_key = this.name %}
+  {% set test_scope = test_context.get(test_key, {}) %}
+  {% do test_scope.update({key: value | default("")}) %}
+  {% do test_context.update({test_key: test_scope}) %}
+  {% do context.update({"__DUT_TEST_CONTEXT__": test_context}) %}
+{% endmacro %}
+
+{% macro get_test_context(key, default_value) %}
+  {% set test_context = context.get("__DUT_TEST_CONTEXT__", {}) %}
+  {% set test_key = this.name %}
+  {% set test_scope = test_context.get(test_key, {}) %}
+  {{ return (test_scope.get(key, default_value)) }}
+{% endmacro %}
+
+{% macro clear_test_context(key, default_value) %}
+  {% set test_context = context.get("__DUT_TEST_CONTEXT__", {}) %}
+  {% set test_key = this.name %}
+  {% do context.update({test_key: {}}) %}
+{% endmacro %}
+

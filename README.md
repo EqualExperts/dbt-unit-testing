@@ -21,6 +21,7 @@ You can test models independently by mocking their dependencies (models, sources
   - [Mocking](#mocking)
     - [Database dependencies in detail](#database-dependencies-in-detail)
     - [Requirement](#requirement)
+  - [Incremental Models](#incremental-models)
   - [Available Options](#available-options)
   - [Test Feedback](#test-feedback)
     - [Example](#example)
@@ -110,10 +111,12 @@ We leverage the command dbt test to run the unit tests; then, we need a way to i
 
 ## Available Macros
 
-- **dbt_unit_testing.test** Macro used to define a test.
-- **dbt_unit_testing.mock-ref** Macro used to mock a model/snapshot/seed.
-- **dbt_unit_testing.mock-source** Macro used to mock a source.
-- **dbt_unit_testing.expect** Macro used to define the test expectations.
+| macro name                   | description                                     |
+|------------------------------|-------------------------------------------------|
+| dbt_unit_testing.test        | Defines a Test                                  |
+| dbt_unit_testing.mock-ref    | Mocks a **model** / **snapshot** / **seed**     |
+| dbt_unit_testing.mock-source | Mocks a **source**                              |
+| dbt_unit_testing.expect      | Defines Test expectations                       |
 
 ## Test Examples
 
@@ -368,6 +371,51 @@ select {{ dbt_utils.star(builtins.ref('some_model')) }}
 from {{ ref('some_model') }}
 ```
 
+## Incremental models
+
+You can write unit tests for incremental models, but your models need to follow some rules:
+
+- Use `dbt_unit_testing.is_incremental()` instead of the regular `is_incremental()`
+- Use `dbt_unit_testing.this()` instead of the regular `this`
+
+*Example*:
+
+```jinja
+{{ config (materialized = 'incremental' ) }}
+
+select c from {{ dbt_unit_testing.ref('some_model') }}
+
+{% if dbt_unit_testing.is_incremental() %}
+  where c > (select max(c) from {{ dbt_unit_testing.this() }})
+{% endif %}
+```
+
+If you write a test for this model, it will act as if the test is running in `full-refresh` mode, i.e., without the `is_incremental` section.
+
+If you want to test the `is_incremental` section you need to add the option `"is_incremental": "True"` to your test. Let's see an example using the model above:
+
+```jinja
+{% call dbt_unit_testing.test('incremental_model', 'incremental test', options={"is_incremental": "True"}) %}
+  {% call dbt_unit_testing.mock_ref ('some_model') %}
+    select 10 as c
+    UNION ALL
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+  {% call dbt_unit_testing.mock_ref ('incremental_model') %}
+    select 10 as c
+  {% endcall %}
+  {% call dbt_unit_testing.expect() %}
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+{% endcall %}
+```
+
+Notice that here we also are mocking the model being tested (`incremental_model`), so that you can check that the incremental logic is working correctly.
+
 ## Available Options
 
 | option                      | description                     | default              | scope*              |
@@ -380,6 +428,7 @@ from {{ ref('some_model') }}
 | **type_separator**          | Defines the type separator for csv format                       | :: | project/test       |
 | **use_qualified_sources**   | Use qualified names (source_name + table_name) for sources when building the CTEs for the test query. It allows you to have source models with the same name in different sources/schema.                         | false | project            |
 | **disable_cache**        | Disable cache                             | false| project            |
+| **is_incremental**        | Runs the model in `incremental` mode (it has no effect if the model is not incremental)     | false| project/test            |
 Notes:
 
 - **scope** is the place where the option can be defined:
