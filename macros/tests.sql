@@ -10,7 +10,8 @@
       {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
     {% endif %}
     
-    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}
+    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}    
+    {{ dbt_unit_testing.clear_test_context() }}
   {% endif %}
 {% endmacro %}
 
@@ -174,7 +175,7 @@
 {% endmacro %}
 
 {% macro ref(model_name) %}
-  {% if 'unit-test' in config.get('tags') %}
+  {% if dbt_unit_testing.running_unit_test() %}
       {{ return (dbt_unit_testing.ref_cte_name(model_name)) }}
   {% else %}
       {{ return (builtins.ref(model_name)) }}
@@ -182,11 +183,33 @@
 {% endmacro %}
 
 {% macro source(source, table_name) %}
-  {% if 'unit-test' in config.get('tags') %}
+  {% if dbt_unit_testing.running_unit_test() %}
       {{ return (dbt_unit_testing.source_cte_name(source, table_name)) }}
   {% else %}
       {{ return (builtins.source(source, table_name)) }}
   {% endif %}
+{% endmacro %}
+
+{% macro is_incremental () %}
+  {% if dbt_unit_testing.running_unit_test() %}
+      {% set options = dbt_unit_testing.get_test_context("options", {}) %}
+      {{ return (options.get("is_incremental", False)) }}
+  {% else %}
+      {{ return (context['is_incremental']())}}
+  {% endif %}
+{% endmacro %}
+
+{% macro this() %}
+  {% if dbt_unit_testing.running_unit_test() %}
+      {% set model_name = dbt_unit_testing.get_test_context("model_name") %}
+      {{ return (dbt_unit_testing.ref(model_name)) }}
+  {% else %}
+      {{ return (this) }}
+  {% endif %}
+{% endmacro %}
+
+{% macro running_unit_test() %}
+  {{ return ('unit-test' in config.get('tags')) }}
 {% endmacro %}
 
 {% macro ref_tested_model(model_name) %}
