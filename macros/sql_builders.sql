@@ -23,6 +23,9 @@
     {%- endif -%}
     {{ "\n" }}
     select * from ({{ dbt_unit_testing.render_node(model_node) }} {{ "\n" }} ) as t
+    {% if adapter.type() == 'clickhouse' %}
+      SETTINGS join_algorithm='hash'
+    {% endif %}
   {%- endset -%}
 
   {% do return(model_complete_sql) %}
@@ -85,7 +88,13 @@
       {% set name = node.name %}
     {%- endif %}
 
-    select * from {{ dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) }} where false
+    {%- if node.database is none %}
+      {% set table_path = dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) %}
+    {%- else %}
+      {% set table_path = dbt_unit_testing.quote_identifier(node.database) ~ '.' ~ dbt_unit_testing.quote_identifier(node.schema) ~ '.' ~ dbt_unit_testing.quote_identifier(name) %}
+    {%- endif %}
+
+    select * from {{ table_path }} where false
   {%- else -%}
     {% if complete %}
       {{ dbt_unit_testing.build_model_complete_sql(node) }}
