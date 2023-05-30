@@ -373,29 +373,60 @@ from {{ ref('some_model') }}
 
 ## Incremental models
 
-You can write unit tests for incremental models, but your models need to follow some rules:
+You can write unit tests for incremental models. To enable this functionality, you should add the following code to your project:
 
-- Use `dbt_unit_testing.is_incremental()` instead of the regular `is_incremental()`
-- Use `dbt_unit_testing.this()` instead of the regular `this`
+```jinja
+{% macro is_incremental() %}
+  {{ return (dbt_unit_testing.is_incremental()) }}
+{% endmacro %}
+```
 
-*Example*:
+Here's an example of how you can test a model using this approach.
+
+Consider the following model:
 
 ```jinja
 {{ config (materialized = 'incremental' ) }}
 
 select c from {{ dbt_unit_testing.ref('some_model') }}
 
-{% if dbt_unit_testing.is_incremental() %}
-  where c > (select max(c) from {{ dbt_unit_testing.this() }})
+{% if is_incremental() %}
+  where c > (select max(c) from {{ this }})
 {% endif %}
 ```
 
-If you write a test for this model, it will act as if the test is running in `full-refresh` mode, i.e., without the `is_incremental` section.
-
-If you want to test the `is_incremental` section you need to add the option `"is_incremental": "True"` to your test. Let's see an example using the model above:
+When writing a test for this model, it will simulate the model running in `full-refresh` mode, without the `is_incremental` section:
 
 ```jinja
-{% call dbt_unit_testing.test('incremental_model', 'incremental test', options={"is_incremental": "True"}) %}
+{% call dbt_unit_testing.test('incremental_model', 'full refresh test') %}
+  {% call dbt_unit_testing.mock_ref ('model_for_incremental') %}
+    select 10 as c
+    UNION ALL
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+  {% call dbt_unit_testing.mock_ref ('incremental_model') %}
+    select 15 as c
+    UNION ALL
+    select 25 as c
+  {% endcall %}
+  {% call dbt_unit_testing.expect() %}
+    select 10 as c
+    UNION ALL
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+{% endcall %}
+```
+
+As you can observe, the existing rows for the incremental_model were deleted, and the model performed a `full-refresh` operation, which is reflected in the expectations.
+
+To test the `is_incremental` section of your model, you must include the option {"run_as_incremental": "True"} in your test. Here's an example using the above model:
+
+```jinja
+{% call dbt_unit_testing.test('incremental_model', 'incremental test', options={"run_as_incremental": "True"}) %}
   {% call dbt_unit_testing.mock_ref ('some_model') %}
     select 10 as c
     UNION ALL
@@ -414,7 +445,7 @@ If you want to test the `is_incremental` section you need to add the option `"is
 {% endcall %}
 ```
 
-Notice that here we also are mocking the model being tested (`incremental_model`), so that you can check that the incremental logic is working correctly.
+Note that in this case, we are also mocking the model being tested (`incremental_model`) to ensure the incremental logic functions correctly. It is necessary to mock the model itself when writing a test for the `is_incremental` part of the model.
 
 ## Available Options
 
@@ -430,6 +461,7 @@ Notice that here we also are mocking the model being tested (`incremental_model`
 | **disable_cache**        | Disable cache                             | false| project            |
 | **diff_column**        | The name of the `diff` column in the test report        | diff| project/test            |
 | **count_column**        | The name of the `count` column in the test report        | count| project/test            |
+| **run_as_incremental**      | Runs the model in `incremental` mode (it has no effect if the model is not incremental)     | false| project/test            |
 Notes:
 
 - **scope** is the place where the option can be defined:
