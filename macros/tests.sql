@@ -187,21 +187,12 @@
   {% endif %}
 {% endmacro %}
 
-{% macro is_incremental () %}
+{% macro is_incremental() %}
   {% if dbt_unit_testing.running_unit_test() %}
       {% set options = dbt_unit_testing.get_test_context("options", {}) %}
-      {{ return (options.get("is_incremental", False)) }}
+      {{ return (options.get("run_as_incremental", False)) }}
   {% else %}
-      {{ return (context['is_incremental']())}}
-  {% endif %}
-{% endmacro %}
-
-{% macro this() %}
-  {% if dbt_unit_testing.running_unit_test() %}
-      {% set model_name = dbt_unit_testing.get_test_context("model_name") %}
-      {{ return (dbt_unit_testing.ref(model_name)) }}
-  {% else %}
-      {{ return (this) }}
+      {{ return (dbt.is_incremental())}}
   {% endif %}
 {% endmacro %}
 
