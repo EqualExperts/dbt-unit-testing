@@ -39,6 +39,15 @@
   {{ return(model_complete_sql) }}
 {% endmacro %}
 
+{% macro replace_this_with_model_name(rendered_node) %}
+  {% set this_name = this | string %}
+  {% set model_name = dbt_unit_testing.get_test_context('model_name') %}
+  {% if model_name is defined %}
+    {{ return (rendered_node.replace(this_name, model_name)) }}
+  {% endif %}
+  {{ return (rendered_node) }}
+{% endmacro %}
+
 {% macro cte_name(node) %}
   {% if node.resource_type in ('source') %}
     {{ return (dbt_unit_testing.source_cte_name(node.source_name, node.name)) }}
