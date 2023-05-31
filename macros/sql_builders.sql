@@ -26,8 +26,7 @@
     {% endif %}
   {%- endfor -%}
 
-  {% set rendered_node = dbt_unit_testing.render_node(model_node) %}
-  {% set rendered_node = dbt_unit_testing.replace_this_with_model_name(rendered_node) %}
+  {% set rendered_node = dbt_unit_testing.render_node_for_model_being_tested(model_node) %}
   {%- set model_complete_sql -%}
     {% if cte_dependencies %}
       with
@@ -38,15 +37,6 @@
   {%- endset -%}
 
   {{ return(model_complete_sql) }}
-{% endmacro %}
-
-{% macro replace_this_with_model_name(rendered_node) %}
-  {% set this_name = this | string %}
-  {% set model_name = dbt_unit_testing.get_test_context('model_name') %}
-  {% if model_name is defined %}
-    {{ return (rendered_node.replace(this_name, model_name)) }}
-  {% endif %}
-  {{ return (rendered_node) }}
 {% endmacro %}
 
 {% macro cte_name(node) %}
