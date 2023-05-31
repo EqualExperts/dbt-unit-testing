@@ -1,6 +1,7 @@
 {% macro test_should_fail (model_name, test_description) %}
   {% set mocks_and_expectations_json_str = caller() %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
+  {{ dbt_unit_testing.set_test_context("model_name", model_name) }}
   {% if execute %}
     {% set test_configuration = {
       "model_name": model_name, 
