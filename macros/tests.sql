@@ -21,6 +21,7 @@
     "description": test_description, 
     "options": dbt_unit_testing.merge_configs([options])} 
   %}
+  {{ dbt_unit_testing.set_test_context("options", test_configuration.options) }}
 
   {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
   

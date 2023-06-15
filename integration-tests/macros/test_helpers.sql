@@ -1,6 +1,6 @@
 {% macro test_should_fail (model_name, test_description) %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
-  {{ dbt_unit_testing.set_test_context("model_name", model_name) }}
+  {{ dbt_unit_testing.set_test_context("model_being_tested", model_name) }}
   {% if execute %}
     {% set mocks_and_expectations_json_str = caller() %}
     {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_name, test_description, {}, mocks_and_expectations_json_str) %}
