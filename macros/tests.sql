@@ -7,7 +7,7 @@
       "description": test_description, 
       "options": dbt_unit_testing.merge_configs([options])} 
     %}
-    {{ dbt_unit_testing.set_test_context("model_name", test_configuration.model_name) }}
+    {{ dbt_unit_testing.set_test_context("model_being_tested", test_configuration.model_name) }}
     {{ dbt_unit_testing.set_test_context("options", test_configuration.options) }}
 
     {% set mocks_and_expectations_json_str = caller() %}
