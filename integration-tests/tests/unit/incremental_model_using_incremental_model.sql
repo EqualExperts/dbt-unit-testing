@@ -4,7 +4,7 @@
     )
 }}
 
-{% call dbt_unit_testing.test('incremental_model_using_incremental_model', 'incremental test') %}
+{% call dbt_unit_testing.test('incremental_model_using_incremental_model', 'full refresh test') %}
   {% call dbt_unit_testing.mock_ref ('incremental_model_1') %}
     select 100 as c1
     UNION ALL

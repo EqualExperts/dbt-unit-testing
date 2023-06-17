@@ -28,6 +28,7 @@
   {% set model_sql = model_sql.replace(this_name, replace_mask) %}
   {{ dbt_unit_testing.set_test_context("model_being_rendered", model_name) }}
   {% set rendered_sql = render(model_sql) %}
+  {{ dbt_unit_testing.set_test_context("model_being_rendered", "") }}
   {% set rendered_sql = rendered_sql.replace(this_name, model_name) %}
   {% set rendered_sql = rendered_sql.replace(replace_mask, this_name) %}
   {{ return (rendered_sql) }}
