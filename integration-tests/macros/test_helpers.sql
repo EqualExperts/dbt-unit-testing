@@ -49,3 +49,4 @@
 {% macro is_incremental() %}
   {{ return (dbt_unit_testing.is_incremental()) }}
 {% endmacro %}
+
