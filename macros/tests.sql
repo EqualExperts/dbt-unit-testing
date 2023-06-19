@@ -2,6 +2,7 @@
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
   {% if execute %}
+    {{ dbt_unit_testing.set_test_context("model_being_tested", test_configuration.model_name) }}
     {% set mocks_and_expectations_json_str = caller() %}
     {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
     {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
