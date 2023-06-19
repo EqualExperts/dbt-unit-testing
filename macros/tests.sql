@@ -2,17 +2,9 @@
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
   {% if execute %}
-    {% set test_configuration = {
-      "model_name": model_name, 
-      "description": test_description, 
-      "options": dbt_unit_testing.merge_configs([options])} 
-    %}
     {% set mocks_and_expectations_json_str = caller() %}
-
-    {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
-    
-    {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
-    {% set test_report = dbt_unit_testing.build_test_report(test_configuration) %}
+    {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
+    {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
 
     {% if not test_report.succeeded %}
       {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
@@ -20,6 +12,21 @@
     
     select 1 as a from (select 1) as t where {{ not test_report.succeeded }}
   {% endif %}
+{% endmacro %}
+
+{% macro build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
+  {% set test_configuration = {
+    "model_name": model_name, 
+    "description": test_description, 
+    "options": dbt_unit_testing.merge_configs([options])} 
+  %}
+
+  {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
+  
+  {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
+  {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
+
+  {{ return ((test_configuration, test_queries)) }}
 {% endmacro %}
 
 {% macro build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str) %}
@@ -50,9 +57,8 @@
     {{ return (mocks_and_expectations_json) }}
 {% endmacro %}
 
-{% macro build_test_report(test_configuration) %}
+{% macro build_test_report(test_configuration, test_queries) %}
 
-  {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
   {% set test_report = dbt_unit_testing.run_test_query(test_configuration, test_queries) %}
 
   {{ dbt_unit_testing.verbose("-------------------- " ~ test_configuration.model_name ~ " --------------------" ) }}
@@ -105,6 +111,7 @@
   {%- endset -%}
 
   {% set test_queries = {
+    "model_query": model_complete_sql,
     "actual_query": actual_query,
     "expectations_query": expectations_query,
     "test_query": test_query

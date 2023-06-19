@@ -1,7 +1,7 @@
 {% macro run_query(query) %}
   {% set start_time = modules.datetime.datetime.now() %}
   {{ dbt_unit_testing.verbose('Running query => ' ~ dbt_unit_testing.sanitize(query)) }}
-  {% set results = run_query(query) %}
+  {% set results = dbt.run_query(query) %}
   {% set end_time = modules.datetime.datetime.now() - start_time %}
   {{ dbt_unit_testing.verbose('Execution time => ' ~ end_time) }}
   {{ dbt_unit_testing.verbose('==============================================================') }}
@@ -48,7 +48,9 @@
 {% endmacro %}
 
 {% macro debug(s) %}
-  {{ dbt_unit_testing.log_info (s, only_on_execute=true) }}
+  {% if var('debug', dbt_unit_testing.config_is_true('debug')) %}
+    {{ dbt_unit_testing.log_info (s, only_on_execute=true) }}
+  {% endif %}
 {% endmacro %}
 
 {% macro verbose(s) %}

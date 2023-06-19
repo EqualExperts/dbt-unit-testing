@@ -1,6 +1,6 @@
 {{
     config(
-        tags=['unit-test', 'no-db-dependency']
+        tags=['unit-test']
     )
 }}
 

@@ -15,7 +15,7 @@ if [[ ! -e ~/.dbt/profiles.yml ]]; then
 fi
 
 dbt deps --target "$PROFILE"
-dbt test --target "$PROFILE" --models tag:unit-test,tag:no-db-dependency
+dbt test --target "$PROFILE" --models tag:unit-test, --exclude tag:db-dependency
 # create seeds in the database
 dbt seed --target "$PROFILE"
 # run tests that leverages from the created sources
