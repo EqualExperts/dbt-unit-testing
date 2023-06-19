@@ -39,7 +39,7 @@ UNION ALL
 
 UNION ALL
 
-{% call dbt_unit_testing.test('incremental_model_1', 'incremental test', options={"run_as_incremental": "True"}) %}
+{% call dbt_unit_testing.test('incremental_model_1', 'incremental test', options={"run_as_incremental": true}) %}
   {% call dbt_unit_testing.mock_ref ('model_for_incremental') %}
     select 10 as c1
     UNION ALL
