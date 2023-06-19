@@ -9,21 +9,21 @@
   {% set cte_dependencies = [] %}
 
   {% for mock in mocks %}
-    {% set cte_name = dbt_unit_testing.cte_name(mock) %}
-    {% set cte_sql = mock.input_values %}
-    {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
-    {% set cte_dependencies = cte_dependencies.append(cte) %}
+    {% if mock.unique_id not in model_dependencies %}
+      {% set cte_name = dbt_unit_testing.cte_name(mock) %}
+      {% set cte_sql = mock.input_values %}
+      {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
+      {% set cte_dependencies = cte_dependencies.append(cte) %}
+    {% endif %}
   {%- endfor -%}
 
   {% for node_id in model_dependencies %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}
     {% set mock = mocks | selectattr("unique_id", "==", node_id) | first %}
-    {% if not mock %}
-      {% set cte_name = dbt_unit_testing.cte_name(node) %}
-      {% set cte_sql = dbt_unit_testing.build_node_sql(node, use_database_models=options.use_database_models) %}
-      {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
-      {% set cte_dependencies = cte_dependencies.append(cte) %}
-    {% endif %}
+    {% set cte_name = dbt_unit_testing.cte_name(mock if mock else node) %}
+    {% set cte_sql = mock.input_values if mock else dbt_unit_testing.build_node_sql(node, use_database_models=options.use_database_models) %}
+    {% set cte = dbt_unit_testing.quote_identifier(cte_name) ~ " as (" ~ cte_sql ~ ")" %}
+    {% set cte_dependencies = cte_dependencies.append(cte) %}
   {%- endfor -%}
 
   {% set rendered_node = dbt_unit_testing.render_node_for_model_being_tested(model_node) %}

@@ -1,8 +1,7 @@
-{% macro test(model_name, test_description, options={}) %}
+{% macro test(model_name, test_description='(no description)', options={}) %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
   {% if execute %}
-    {{ dbt_unit_testing.set_test_context("model_being_tested", test_configuration.model_name) }}
     {% set mocks_and_expectations_json_str = caller() %}
     {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
     {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
@@ -17,6 +16,7 @@
 {% endmacro %}
 
 {% macro build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
+  {{ dbt_unit_testing.set_test_context("model_being_tested", model_name) }}
   {% set test_configuration = {
     "model_name": model_name, 
     "description": test_description, 
@@ -125,7 +125,7 @@
 
 {% macro show_test_report(test_configuration, test_report) %}
   {% set model_name = test_configuration.model_name %}
-  {% set test_description = test_configuration.description | default('(no description)') %}
+  {% set test_description = test_configuration.description %}
 
   {{ dbt_unit_testing.println('{RED}MODEL: {YELLOW}' ~ model_name) }}
   {{ dbt_unit_testing.println('{RED}TEST:  {YELLOW}' ~ test_description) }}
