@@ -459,6 +459,8 @@ Note that in this case, we are also mocking the model being tested (`incremental
 | **type_separator**          | Defines the type separator for csv format                       | :: | project/test       |
 | **use_qualified_sources**   | Use qualified names (source_name + table_name) for sources when building the CTEs for the test query. It allows you to have source models with the same name in different sources/schema.                         | false | project            |
 | **disable_cache**        | Disable cache                             | false| project            |
+| **diff_column**        | The name of the `diff` column in the test report        | diff| project/test            |
+| **count_column**        | The name of the `count` column in the test report        | count| project/test            |
 | **run_as_incremental**      | Runs the model in `incremental` mode (it has no effect if the model is not incremental)     | false| project/test            |
 Notes:
 
