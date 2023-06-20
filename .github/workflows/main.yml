@@ -67,6 +67,18 @@ jobs:
       - name: test postgres
         run: ./run-all-integration-tests.sh postgres
 
+  integration-tests-spark:
+    runs-on: ubuntu-latest
+    environment: test
+
+    steps:
+      - uses: "actions/checkout@v2"
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: test spark
+        run: ./run-all-integration-tests.sh spark
+
   jaffle-shop-tests-postgres:
     runs-on: ubuntu-latest
     environment: test
