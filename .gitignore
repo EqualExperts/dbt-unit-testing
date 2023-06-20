@@ -11,3 +11,6 @@ venv/
 integration-tests/ci/.user.yml
 tmp
 .idea
+spark-warehouse/
+metastore_db/
+derby.log

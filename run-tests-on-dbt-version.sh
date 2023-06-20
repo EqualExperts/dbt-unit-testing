@@ -25,16 +25,16 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 VENV_NAME="venv-$PROFILE"
 VENV_FOLDER="$SCRIPT_DIR/$VENV_NAME"
 
-rm -rf "$VENV_FOLDER"
-python3 -m venv "$VENV_FOLDER"
+#rm -rf "$VENV_FOLDER"
+#python3 -m venv "$VENV_FOLDER"
 
-pip install --upgrade pip setuptools
-if [ $PROFILE = 'spark' ];
-then
-  pip install "dbt-spark[session]==$DBT_VERSION"
-else
-  pip install "dbt-$PROFILE==$DBT_VERSION"
-fi
+#pip install --upgrade pip setuptools
+#if [ $PROFILE = 'spark' ];
+#then
+#  pip install "dbt-spark[session]==$DBT_VERSION"
+#else
+#  pip install "dbt-$PROFILE==$DBT_VERSION"
+#fi
 
 source "$VENV_FOLDER/bin/activate"
 
