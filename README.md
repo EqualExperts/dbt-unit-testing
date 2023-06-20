@@ -380,6 +380,8 @@ from {{ ref('some_model') }}
 | **type_separator**          | Defines the type separator for csv format                       | :: | project/test       |
 | **use_qualified_sources**   | Use qualified names (source_name + table_name) for sources when building the CTEs for the test query. It allows you to have source models with the same name in different sources/schema.                         | false | project            |
 | **disable_cache**        | Disable cache                             | false| project            |
+| **diff_column**        | The name of the `diff` column in the test report        | diff| project/test            |
+| **count_column**        | The name of the `count` column in the test report        | count| project/test            |
 Notes:
 
 - **scope** is the place where the option can be defined:

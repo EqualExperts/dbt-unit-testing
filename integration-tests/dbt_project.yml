@@ -31,3 +31,5 @@ vars:
     column_separator: ","
     line_separator: "\n"
     type_separator: "::"
+    diff_column: "diff"
+    count_column: "count"
