@@ -1,6 +1,6 @@
 {{
     config(
-        tags=['unit-test', 'bigquery']
+        tags=['unit-test', 'bigquery', 'spark']
     )
 }}
 
