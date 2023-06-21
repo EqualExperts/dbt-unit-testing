@@ -64,7 +64,6 @@
 {% endmacro %}
 
 {% macro build_model_dependencies(node, models_to_exclude, build_full_lineage=True) %}
-
   {% set model_dependencies = [] %}
   {% for node_id in node.depends_on.nodes %}
     {% set node = dbt_unit_testing.node_by_id(node_id) %}

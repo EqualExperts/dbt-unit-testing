@@ -1,1 +1,1 @@
-select * from {{dbt_unit_testing.ref('samplesnapshot')}}
+select * from {{dbt_unit_testing.ref('sample_snapshot')}}

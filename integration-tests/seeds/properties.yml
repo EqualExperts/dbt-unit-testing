@@ -14,7 +14,3 @@ seeds:
     config:
       schema: schema_2
       alias: multi_schema
-
-  - name: s1
-  - name: s2
-  - name: s3
