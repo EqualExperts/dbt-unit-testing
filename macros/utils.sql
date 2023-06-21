@@ -12,28 +12,6 @@
   {{ return (" ".join(s.split())) }}
 {% endmacro %}
 
-{% macro render_node(node) %}
-  {% set model_sql = node.raw_sql if node.raw_sql is defined else node.raw_code %}
-  {{ return (render(model_sql)) }}
-{% endmacro %}
-     
-{% macro render_node_for_model_being_tested(node) %}
-  {% set model_sql = node.raw_sql if node.raw_sql is defined else node.raw_code %}
-  {% set model_name = node.name %}
-  {% set this_name = this | string %}
-  -- If the model contains a 'this' property, we will replace its result with the name of the model being tested
-  -- but first we mask previous occurrences that could be there before the render (very unlikely to happen)
-  -- This way we 'ensure' that we only replace stuff produced after the render 
-  {% set replace_mask = '######################' %}
-  {% set model_sql = model_sql.replace(this_name, replace_mask) %}
-  {{ dbt_unit_testing.set_test_context("model_being_rendered", model_name) }}
-  {% set rendered_sql = render(model_sql) %}
-  {{ dbt_unit_testing.set_test_context("model_being_rendered", "") }}
-  {% set rendered_sql = rendered_sql.replace(this_name, model_name) %}
-  {% set rendered_sql = rendered_sql.replace(replace_mask, this_name) %}
-  {{ return (rendered_sql) }}
-{% endmacro %}
-
 {% macro extract_columns_list(query) %}
   {% set results = dbt_unit_testing.run_query(query) %}
   {% set columns = results.columns | map(attribute='name') | list %}
