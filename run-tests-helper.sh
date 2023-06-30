@@ -10,6 +10,8 @@ function run_tests() {
     VERSIONS="1.3.2"
   elif [ "$PROFILE" == "snowflake" ]; then
     VERSIONS="1.3.1"
+  elif [ "$PROFILE" == "spark" ]; then
+    VERSIONS="1.5.0"
   else
     echo "Invalid profile name: $PROFILE"
     exit 1

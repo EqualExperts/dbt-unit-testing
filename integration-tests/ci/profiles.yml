@@ -28,3 +28,11 @@ integration_tests:
       warehouse: "{{ env_var('SNOWFLAKE_TEST_WAREHOUSE') }}"
       schema: dbt_unit_testing
       threads: 1
+
+    spark:
+      type: spark
+      host: localhost
+      method: session
+      port: 443
+      schema: default
+      threads: 1

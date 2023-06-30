@@ -1,6 +1,6 @@
 {{
     config(
-        tags=['unit-test', 'bigquery', 'snowflake', 'postgres', 'db-dependency']
+        tags=['unit-test', 'bigquery', 'snowflake', 'postgres', 'db-dependency', 'spark']
     )
 }}
 
