@@ -19,9 +19,13 @@
 {% endmacro %}
 
 {% macro extract_columns_difference(cl1, cl2) %}
-  !! WRONG !!
-  {% set columns = cl1 | reject('in', cl2) | list %}
-  {{ return(columns) }}
+  {% set columns = [] %}
+  {% for column in cl1 %}
+    {% if column.lower() not in cl2 | map('lower') | list %}
+      {% set _ = columns.append(column) %}
+    {% endif %}
+  {% endfor %}
+  {{ return (columns) }}
 {% endmacro %}
 
 {% macro quote_and_join_columns(columns) %}
