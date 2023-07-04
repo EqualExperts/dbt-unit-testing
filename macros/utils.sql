@@ -62,7 +62,7 @@
   {{ return (mapped_items) }}
 {% endmacro %}
 
-{% macro node_by_id (node_id) %}]
+{% macro node_by_id (node_id) %}
   {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
 {% endmacro %}
 
