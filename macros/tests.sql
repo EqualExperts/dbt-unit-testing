@@ -176,10 +176,6 @@
 
 {% endmacro %}
 
-{% macro running_unit_test() %}
-  {{ return ('unit-test' in config.get('tags', {})) }}
-{% endmacro %}
-
 {% macro ref_tested_model(model_name) %}
   {% set ref_tested_model %}
     -- We add an (unused) reference to the tested model,

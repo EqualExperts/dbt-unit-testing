@@ -24,3 +24,7 @@
       {{ return (dbt.is_incremental())}}
   {% endif %}
 {% endmacro %}
+
+{% macro running_unit_test() %}
+  {{ return ('unit-test' in config.get('tags', {})) }}
+{% endmacro %}
