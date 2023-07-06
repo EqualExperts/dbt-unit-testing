@@ -177,7 +177,7 @@
 {% endmacro %}
 
 {% macro running_unit_test() %}
-  {{ return (config.get('tags') and 'unit-test' in config.get('tags')) }}
+  {{ return ('unit-test' in config.get('tags', {})) }}
 {% endmacro %}
 
 {% macro ref_tested_model(model_name) %}
