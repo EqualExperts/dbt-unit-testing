@@ -16,9 +16,9 @@ if [[ ! -e ~/.dbt/profiles.yml ]]; then
   cp ci/profiles.yml ~/.dbt/profiles.yml
 fi
 
-dbt run-operation macro_with_ref --target "$PROFILE"
-
 dbt deps --target "$PROFILE"
+
+dbt run-operation macro_with_ref --target "$PROFILE"
 
 # create seeds in the database
 dbt seed --target "$PROFILE" --select seeds/real_seeds
