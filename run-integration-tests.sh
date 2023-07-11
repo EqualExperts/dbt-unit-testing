@@ -18,6 +18,8 @@ fi
 
 dbt deps --target "$PROFILE"
 
+dbt run-operation macro_with_ref --target "$PROFILE"
+
 # create seeds in the database
 dbt seed --target "$PROFILE" --select seeds/real_seeds
 # run tests with no database dependency
@@ -26,6 +28,7 @@ dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE" --exclude tag
 # create sources in the database
 dbt seed --target "$PROFILE" --select seeds/existing_sources
 # create models in the database for tests that depends on database models
-dbt run --target "$PROFILE" --select models/complex_hierarchy
+dbt run --target "$PROFILE" --select tag:add-to-database  
+
 # run tests with database dependency
 dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE",tag:db-dependency

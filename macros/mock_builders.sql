@@ -52,7 +52,7 @@
 
   {% set model_columns = dbt_unit_testing.get_from_cache("COLUMNS", model_node.name) %}
   {% if not model_columns %}
-    {% set model_sql = dbt_unit_testing.build_node_sql(model_node, complete=true, use_database_models=options.use_database_models) %}
+    {% set model_sql = dbt_unit_testing.build_node_sql(model_node, options.use_database_models, complete=true) %}
     {% set model_columns = dbt_unit_testing.extract_columns_list(model_sql) %}
     {{ dbt_unit_testing.cache("COLUMNS", model_node.name, model_columns)}}
   {% else %}
@@ -64,7 +64,7 @@
 
   {%- if missing_columns -%}
     {% set input_values_sql %}
-      {% set node_sql = dbt_unit_testing.build_node_sql(model_node, use_database_models=options.use_database_models) %}
+      {% set node_sql = dbt_unit_testing.build_node_sql(model_node, options.use_database_models) %}
         select * from ({{ input_values_sql }}) as m1
         left join (select {{ missing_columns | join (",")}}
                   from ({{ node_sql }}) as m2) as m3 on false

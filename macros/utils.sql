@@ -1,7 +1,7 @@
 {% macro run_query(query) %}
   {% set start_time = modules.datetime.datetime.now() %}
   {{ dbt_unit_testing.verbose('Running query => ' ~ dbt_unit_testing.sanitize(query)) }}
-  {% set results = run_query(query) %}
+  {% set results = dbt.run_query(query) %}
   {% set end_time = modules.datetime.datetime.now() - start_time %}
   {{ dbt_unit_testing.verbose('Execution time => ' ~ end_time) }}
   {{ dbt_unit_testing.verbose('==============================================================') }}
@@ -10,11 +10,6 @@
 
 {% macro sanitize(s) %}
   {{ return (" ".join(s.split())) }}
-{% endmacro %}
-
-{% macro render_node(node) %}
-  {% set sql = node.raw_sql if node.raw_sql is defined else node.raw_code %}
-  {{ return (render(sql)) }}
 {% endmacro %}
 
 {% macro extract_columns_list(query) %}
@@ -48,7 +43,9 @@
 {% endmacro %}
 
 {% macro debug(s) %}
-  {{ dbt_unit_testing.log_info (s, only_on_execute=true) }}
+  {% if var('debug', dbt_unit_testing.config_is_true('debug')) %}
+    {{ dbt_unit_testing.log_info (s, only_on_execute=true) }}
+  {% endif %}
 {% endmacro %}
 
 {% macro verbose(s) %}
@@ -65,7 +62,7 @@
   {{ return (mapped_items) }}
 {% endmacro %}
 
-{% macro node_by_id (node_id) %}]
+{% macro node_by_id (node_id) %}
   {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
 {% endmacro %}
 
@@ -154,19 +151,42 @@
   {% if dbt_unit_testing.config_is_true('disable_cache') %}
     {{ return (nil) }}
   {% else %}
-    {% set cache = graph.get("__DUT_CACHE__", {}) %}
+    {% set cache = context.get("__DUT_CACHE__", {}) %}
     {% set scope = cache.get(scope_key, {}) %}
     {% do scope.update({key: value}) %}
     {% do cache.update({scope_key: scope}) %}
-    {% do graph.update({"__DUT_CACHE__": cache}) %}
+    {% do context.update({"__DUT_CACHE__": cache}) %}
   {% endif %}
 {% endmacro %}
 
 {% macro get_from_cache(scope, key) %}
-  {% set cache = graph.get("__DUT_CACHE__", {}).get(scope, {}) %}
+  {% set cache = context.get("__DUT_CACHE__", {}).get(scope, {}) %}
   {{ return (cache[key]) }}
 {% endmacro %}
 
 {% macro raise_error(error_message) %}
   {{ exceptions.raise_compiler_error('\x1b[31m' ~ error_message ~ '\x1b[0m') }}
 {% endmacro %}
+
+{% macro set_test_context(key, value) %}
+  {% set test_context = context.get("__DUT_TEST_CONTEXT__", {}) %}
+  {% set test_key = this.name %}
+  {% set test_scope = test_context.get(test_key, {}) %}
+  {% do test_scope.update({key: value | default("")}) %}
+  {% do test_context.update({test_key: test_scope}) %}
+  {% do context.update({"__DUT_TEST_CONTEXT__": test_context}) %}
+{% endmacro %}
+
+{% macro get_test_context(key, default_value) %}
+  {% set test_context = context.get("__DUT_TEST_CONTEXT__", {}) %}
+  {% set test_key = this.name %}
+  {% set test_scope = test_context.get(test_key, {}) %}
+  {{ return (test_scope.get(key, default_value)) }}
+{% endmacro %}
+
+{% macro clear_test_context(key, default_value) %}
+  {% set test_context = context.get("__DUT_TEST_CONTEXT__", {}) %}
+  {% set test_key = this.name %}
+  {% do context.update({test_key: {}}) %}
+{% endmacro %}
+

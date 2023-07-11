@@ -1,25 +1,35 @@
-{% macro test(model_name, test_description, options={}) %}
+{% macro test(model_name, test_description='(no description)', options={}) %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
   {% if execute %}
-    {% set test_configuration = {
-      "model_name": model_name, 
-      "description": test_description, 
-      "options": dbt_unit_testing.merge_configs([options])} 
-    %}
     {% set mocks_and_expectations_json_str = caller() %}
-
-    {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
-    
-    {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
-    {% set test_report = dbt_unit_testing.build_test_report(test_configuration) %}
+    {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
+    {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
 
     {% if not test_report.succeeded %}
       {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
     {% endif %}
     
-    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}
+    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}    
+    {{ dbt_unit_testing.clear_test_context() }}
   {% endif %}
+{% endmacro %}
+
+{% macro build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
+  {{ dbt_unit_testing.set_test_context("model_being_tested", model_name) }}
+  {% set test_configuration = {
+    "model_name": model_name, 
+    "description": test_description, 
+    "options": dbt_unit_testing.merge_configs([options])} 
+  %}
+  {{ dbt_unit_testing.set_test_context("options", test_configuration.options) }}
+
+  {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
+  
+  {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
+  {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
+
+  {{ return ((test_configuration, test_queries)) }}
 {% endmacro %}
 
 {% macro build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str) %}
@@ -50,9 +60,8 @@
     {{ return (mocks_and_expectations_json) }}
 {% endmacro %}
 
-{% macro build_test_report(test_configuration) %}
+{% macro build_test_report(test_configuration, test_queries) %}
 
-  {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
   {% set test_report = dbt_unit_testing.run_test_query(test_configuration, test_queries) %}
 
   {{ dbt_unit_testing.verbose("-------------------- " ~ test_configuration.model_name ~ " --------------------" ) }}
@@ -68,12 +77,15 @@
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
 
+  {% set diff_column = test_configuration.options.diff_column | default("diff") %}
+  {% set count_column = test_configuration.options.count_column | default("count") %}
+
   {%- set actual_query -%}
-    select count(1) as count, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
+    select count(1) as {{ count_column }}, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
   {% endset %}
 
   {%- set expectations_query -%}
-    select count(1) as count, {{columns}} from ({{ expectations.input_values }}) as s group by {{ columns }}
+    select count(1) as {{ count_column }}, {{columns}} from ({{ expectations.input_values }}) as s group by {{ columns }}
   {% endset %}
 
   {%- set test_query -%}
@@ -85,14 +97,14 @@
     ),
 
     extra_entries as (
-    select '+' as diff, count, {{columns}} from actual
+    select '+' as {{ diff_column }}, {{ count_column }}, {{columns}} from actual
     {{ except() }}
-    select '+' as diff, count, {{columns}} from expectations),
+    select '+' as {{ diff_column }}, {{ count_column }}, {{columns}} from expectations),
 
     missing_entries as (
-    select '-' as diff, count, {{columns}} from expectations
+    select '-' as {{ diff_column }}, {{ count_column }}, {{columns}} from expectations
     {{ except() }}
-    select '-' as diff, count, {{columns}} from actual)
+    select '-' as {{ diff_column }}, {{ count_column }}, {{columns}} from actual)
     
     select * from extra_entries
     UNION ALL
@@ -105,6 +117,7 @@
   {%- endset -%}
 
   {% set test_queries = {
+    "model_query": model_complete_sql,
     "actual_query": actual_query,
     "expectations_query": expectations_query,
     "test_query": test_query
@@ -115,7 +128,7 @@
 
 {% macro show_test_report(test_configuration, test_report) %}
   {% set model_name = test_configuration.model_name %}
-  {% set test_description = test_configuration.description | default('(no description)') %}
+  {% set test_description = test_configuration.description %}
 
   {{ dbt_unit_testing.println('{RED}MODEL: {YELLOW}' ~ model_name) }}
   {{ dbt_unit_testing.println('{RED}TEST:  {YELLOW}' ~ test_description) }}
@@ -161,22 +174,6 @@
   } %}
   {{ return (test_report) }}
 
-{% endmacro %}
-
-{% macro ref(model_name) %}
-  {% if 'unit-test' in config.get('tags') %}
-      {{ return (dbt_unit_testing.ref_cte_name(model_name)) }}
-  {% else %}
-      {{ return (builtins.ref(model_name)) }}
-  {% endif %}
-{% endmacro %}
-
-{% macro source(source, table_name) %}
-  {% if 'unit-test' in config.get('tags') %}
-      {{ return (dbt_unit_testing.source_cte_name(source, table_name)) }}
-  {% else %}
-      {{ return (builtins.source(source, table_name)) }}
-  {% endif %}
 {% endmacro %}
 
 {% macro ref_tested_model(model_name) %}

@@ -21,6 +21,7 @@ You can test models independently by mocking their dependencies (models, sources
   - [Mocking](#mocking)
     - [Database dependencies in detail](#database-dependencies-in-detail)
     - [Requirement](#requirement)
+  - [Incremental Models](#incremental-models)
   - [Available Options](#available-options)
   - [Test Feedback](#test-feedback)
     - [Example](#example)
@@ -35,7 +36,7 @@ Add the following to packages.yml
 ```yaml
 packages:
   - git: "https://github.com/EqualExperts/dbt-unit-testing"
-    revision: v0.2.6
+    revision: v0.2.9
 ```
 
 [read the docs](https://docs.getdbt.com/docs/package-management) for more information on installing packages.
@@ -110,10 +111,12 @@ We leverage the command dbt test to run the unit tests; then, we need a way to i
 
 ## Available Macros
 
-- **dbt_unit_testing.test** Macro used to define a test.
-- **dbt_unit_testing.mock-ref** Macro used to mock a model/snapshot/seed.
-- **dbt_unit_testing.mock-source** Macro used to mock a source.
-- **dbt_unit_testing.expect** Macro used to define the test expectations.
+| macro name                   | description                                     |
+|------------------------------|-------------------------------------------------|
+| dbt_unit_testing.test        | Defines a Test                                  |
+| dbt_unit_testing.mock-ref    | Mocks a **model** / **snapshot** / **seed**     |
+| dbt_unit_testing.mock-source | Mocks a **source**                              |
+| dbt_unit_testing.expect      | Defines Test expectations                       |
 
 ## Test Examples
 
@@ -368,6 +371,82 @@ select {{ dbt_utils.star(builtins.ref('some_model')) }}
 from {{ ref('some_model') }}
 ```
 
+## Incremental models
+
+You can write unit tests for incremental models. To enable this functionality, you should add the following code to your project:
+
+```jinja
+{% macro is_incremental() %}
+  {{ return (dbt_unit_testing.is_incremental()) }}
+{% endmacro %}
+```
+
+Here's an example of how you can test a model using this approach.
+
+Consider the following model:
+
+```jinja
+{{ config (materialized = 'incremental' ) }}
+
+select c from {{ dbt_unit_testing.ref('some_model') }}
+
+{% if is_incremental() %}
+  where c > (select max(c) from {{ this }})
+{% endif %}
+```
+
+When writing a test for this model, it will simulate the model running in `full-refresh` mode, without the `is_incremental` section:
+
+```jinja
+{% call dbt_unit_testing.test('incremental_model', 'full refresh test') %}
+  {% call dbt_unit_testing.mock_ref ('model_for_incremental') %}
+    select 10 as c
+    UNION ALL
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+  {% call dbt_unit_testing.mock_ref ('incremental_model') %}
+    select 15 as c
+    UNION ALL
+    select 25 as c
+  {% endcall %}
+  {% call dbt_unit_testing.expect() %}
+    select 10 as c
+    UNION ALL
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+{% endcall %}
+```
+
+As you can observe, the existing rows for the incremental_model were deleted, and the model performed a `full-refresh` operation, which is reflected in the expectations.
+
+To test the `is_incremental` section of your model, you must include the option {"run_as_incremental": "True"} in your test. Here's an example using the above model:
+
+```jinja
+{% call dbt_unit_testing.test('incremental_model', 'incremental test', options={"run_as_incremental": "True"}) %}
+  {% call dbt_unit_testing.mock_ref ('some_model') %}
+    select 10 as c
+    UNION ALL
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+  {% call dbt_unit_testing.mock_ref ('incremental_model') %}
+    select 10 as c
+  {% endcall %}
+  {% call dbt_unit_testing.expect() %}
+    select 20 as c
+    UNION ALL
+    select 30 as c
+  {% endcall %}
+{% endcall %}
+```
+
+Note that in this case, we are also mocking the model being tested (`incremental_model`) to ensure the incremental logic functions correctly. It is necessary to mock the model itself when writing a test for the `is_incremental` part of the model.
+
 ## Available Options
 
 | option                      | description                     | default              | scope*              |
@@ -380,6 +459,9 @@ from {{ ref('some_model') }}
 | **type_separator**          | Defines the type separator for csv format                       | :: | project/test       |
 | **use_qualified_sources**   | Use qualified names (source_name + table_name) for sources when building the CTEs for the test query. It allows you to have source models with the same name in different sources/schema.                         | false | project            |
 | **disable_cache**        | Disable cache                             | false| project            |
+| **diff_column**        | The name of the `diff` column in the test report        | diff| project/test            |
+| **count_column**        | The name of the `count` column in the test report        | count| project/test            |
+| **run_as_incremental**      | Runs the model in `incremental` mode (it has no effect if the model is not incremental)     | false| project/test            |
 | **cte_name**                | Return the result set of a CTE in the model being tested, rather than the final output. Allows unit tests to be written for given CTEs within a model. If no CTE is provided, the final output will be used (like normal). This assumes that the last line in the model SQL is `select * from final` as per [the dbt-labs style guide](https://github.com/dbt-labs/corp/blob/main/dbt_style_guide.md#ctes). | none | test |
 
 Notes:

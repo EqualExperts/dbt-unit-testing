@@ -17,6 +17,8 @@ sources:
           identifier: true
       - name: sample_source_name
         identifier: sample_source_identifier
+      - name: source_1
+      - name: source_2
 
   - name: source_from_schema_1
     schema: dbt_unit_testing_schema_1
