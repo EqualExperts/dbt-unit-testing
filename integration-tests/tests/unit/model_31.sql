@@ -17,7 +17,7 @@
 UNION ALL
 
 {% call dbt_unit_testing.test('model_31', "unless we need to fetch missing columns") %}
-  {% call dbt_unit_testing.mock_ref ('model_21', {"include_missing_columns": true}) %}
+  {% call dbt_unit_testing.mock_ref ('model_21', options={"include_missing_columns": true}) %}
     select 1 as id
   {% endcall %}
   {% call dbt_unit_testing.expect() %}

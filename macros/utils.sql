@@ -66,30 +66,30 @@
   {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
 {% endmacro %}
 
-{% macro graph_node_by_prefix (prefix, name) %}
-  {{ return (graph.nodes[prefix ~ "." ~ model.package_name ~ "." ~ name])}}
+{% macro graph_node_by_prefix (prefix, node) %}
+  {{ return (graph.nodes[prefix ~ "." ~ node.package_name ~ "." ~ node.name])}}
 {% endmacro %}
 
-{% macro model_node (model_name) %}
+{% macro model_node (node) %}
   {% set node = nil
-      | default(dbt_unit_testing.graph_node_by_prefix("model", model_name))
-      | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name)) 
-      | default(dbt_unit_testing.graph_node_by_prefix("seed", model_name)) %}
+      | default(dbt_unit_testing.graph_node_by_prefix("model", node))
+      | default(dbt_unit_testing.graph_node_by_prefix("snapshot", node)) 
+      | default(dbt_unit_testing.graph_node_by_prefix("seed", node)) %}
   {% if not node %}
-    {{ dbt_unit_testing.raise_error("Node " ~ model.package_name ~ "." ~ model_name ~ " not found.") }}
+    {{ dbt_unit_testing.raise_error("Node " ~ node.package_name ~ "." ~ node.name ~ " not found.") }}
   {% endif %}
   {{ return (node) }}
 {% endmacro %}
 
-{% macro source_node(source_name, model_name) %}
-  {{ return (graph.sources["source." ~ model.package_name ~ "." ~ source_name ~ "." ~ model_name]) }}
+{% macro source_node(node) %}
+  {{ return (graph.sources["source." ~ model.package_name ~ "." ~ node.source_name ~ "." ~ node.name]) }}
 {% endmacro %}
 
-{% macro graph_node(source_name, model_name) %}
-  {% if source_name %}
-    {{ return (dbt_unit_testing.source_node(source_name, model_name)) }}
+{% macro graph_node(node) %}
+  {% if node.resource_type in ('source') %}
+    {{ return (dbt_unit_testing.source_node(node)) }}
   {% else %}
-    {{ return (dbt_unit_testing.model_node(model_name)) }}
+    {{ return (dbt_unit_testing.model_node(node)) }}
   {% endif  %}
 {% endmacro %}
 

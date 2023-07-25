@@ -16,7 +16,8 @@
 {% endmacro %}
 
 {% macro build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
-  {{ dbt_unit_testing.set_test_context("model_being_tested", model_name) }}
+  {% set node = {"package_name": model.package_name, "name": model_name} %}
+  {{ dbt_unit_testing.set_test_context("model_being_tested", dbt_unit_testing.ref_cte_name(node)) }}
   {% set test_configuration = {
     "model_name": model_name, 
     "description": test_description, 
@@ -45,7 +46,7 @@
     {% set expectations = mocks_and_expectations | selectattr("type", "==", "expectations") | first %}
 
     {% for mock in mocks %}
-      {% do mock.update({"unique_id": dbt_unit_testing.graph_node(mock.source_name, mock.name).unique_id}) %}
+      {% do mock.update({"unique_id": dbt_unit_testing.graph_node(mock).unique_id}) %}
       {% if mock.options.include_missing_columns %}
         {% do dbt_unit_testing.enrich_mock_sql_with_missing_columns(mock, test_configuration.options) %}
       {% endif %}
@@ -73,7 +74,8 @@
 
 {% macro build_test_queries(test_configuration) %}
   {% set expectations = test_configuration.expectations %}
-  {% set model_node = dbt_unit_testing.model_node(test_configuration.model_name) %}
+  {% set node = {"package_name": model.package_name, "name": test_configuration.model_name} %}
+  {% set model_node = dbt_unit_testing.model_node(node) %}
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
 

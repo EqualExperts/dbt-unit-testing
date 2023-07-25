@@ -1,8 +1,20 @@
-{% macro mock_ref(model_name, options={}) %}
+{% macro mock_ref(project_or_package, model_name, options={}) %}
+  {% if model_name is mapping %}
+    {% set options = model_name %}
+    {% set model_name = project_or_package %}
+    {% set project_or_package = model.package_name %}
+    {{ dbt_unit_testing.print_warning("Use keyword 'options' when passing options to mock_ref" ~ " (in " ~ model_name ~ ")") }}
+  {% else %}
+    {% set project_or_package, model_name = dbt_unit_testing.setup_project_and_model_name(project_or_package, model_name) %}
+  {% endif %}
+  {% if model_name is undefined %}
+    {{ dbt_unit_testing.raise_error('model_name must be provided for mock_ref') }}
+  {% endif %}
   {% set mock = {
      "type": 'mock',
      "resource_type": 'model',
      "name": model_name,
+     "package_name": project_or_package,
      "options": options,
      "input_values": caller(),
     }
@@ -11,8 +23,11 @@
 {% endmacro %}
 
 {% macro mock_source(source_name, table_name, options={}) %}
-  {% if not table_name %}
-    {{ dbt_unit_testing.raise_error('Table name must be provided for source') }}
+  {% if source_name is undefined %}
+    {{ dbt_unit_testing.raise_error('source_name must be provided for mock_source') }}
+  {% endif %}
+  {% if table_name is undefined %}
+    {{ dbt_unit_testing.raise_error('table_name must be provided for mock_source') }}
   {% endif %}
   {% set mock = {
      "type": 'mock',

@@ -1,14 +1,16 @@
-{% macro ref(model_name) %}
+{% macro ref(project_or_package, model_name) %}
+  {% set project_or_package, model_name = dbt_unit_testing.setup_project_and_model_name(project_or_package, model_name) %}
   {% if dbt_unit_testing.running_unit_test() %}
-      {{ return (dbt_unit_testing.ref_cte_name(model_name)) }}
+      {% set node = {"package_name": project_or_package, "name": model_name} %}
+      {{ return (dbt_unit_testing.ref_cte_name(node)) }}
   {% else %}
-      {{ return (builtins.ref(model_name)) }}
+      {{ return (builtins.ref(project_or_package, model_name)) }}
   {% endif %}
 {% endmacro %}
 
 {% macro source(source, table_name) %}
   {% if dbt_unit_testing.running_unit_test() %}
-      {{ return (dbt_unit_testing.source_cte_name(source, table_name)) }}
+      {{ return (dbt_unit_testing.source_cte_name({"source_name": source, "name": table_name})) }}
   {% else %}
       {{ return (builtins.source(source, table_name)) }}
   {% endif %}
@@ -28,3 +30,12 @@
 {% macro running_unit_test() %}
   {{ return ('unit-test' in config.get('tags', {})) }}
 {% endmacro %}
+
+{% macro setup_project_and_model_name(project_or_package, model_name) %}
+  {% set updated_project_or_package = project_or_package if model_name is defined else model.package_name %}
+  {% set updated_model_name = model_name if model_name is defined else project_or_package %}
+  {{ return((updated_project_or_package, updated_model_name)) }}
+{% endmacro %}
+
+
+

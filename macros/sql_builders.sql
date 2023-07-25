@@ -30,23 +30,27 @@
 
 {% macro cte_name(node) %}
   {% if node.resource_type in ('source') %}
-    {{ return (dbt_unit_testing.source_cte_name(node.source_name, node.name)) }}
+    {{ return (dbt_unit_testing.source_cte_name(node)) }}
   {% else %}
-    {{ return (dbt_unit_testing.ref_cte_name(node.name)) }}
+    {{ return (dbt_unit_testing.ref_cte_name(node)) }}
   {% endif %}
 {% endmacro %}
 
-{% macro ref_cte_name(model_name) %}
-  {{ return (dbt_unit_testing.quote_identifier(model_name)) }}
+{% macro ref_cte_name(node) %}
+  {% if node.project_or_package == model.package_name %}
+    {{ return (dbt_unit_testing.quote_identifier(node.name)) }}
+  {% else %}
+    {{ return (dbt_unit_testing.quote_identifier([node.package_name, node.name] | join("__"))) }}
+  {% endif %}
 {% endmacro %}
 
-{% macro source_cte_name(source, table_name) %}
+{% macro source_cte_name(node) %}
   {%- set cte_name -%}
     {%- if dbt_unit_testing.config_is_true("use_qualified_sources") -%}
-      {%- set source_node = dbt_unit_testing.source_node(source, table_name) -%}
-      {{ [source, table_name] | join("__") }}
+      {%- set source_node = dbt_unit_testing.source_node(node) -%}
+      {{ [source_node.source_name, source_node.name] | join("__") }}
     {%- else -%}
-      {{ table_name }}
+      {{ node.name }}
     {%- endif -%}
   {%- endset -%}
   {{ return (dbt_unit_testing.quote_identifier(cte_name)) }}
@@ -100,7 +104,7 @@
      
 {% macro render_node_for_model_being_tested(node) %}
   {% set model_sql = node.raw_sql if node.raw_sql is defined else node.raw_code %}
-  {% set model_name = node.name %}
+  {% set model_name = dbt_unit_testing.cte_name(node) %}
   {% set this_name = this | string %}
   -- {# If the model contains a 'this' property, we will replace its result with the name of the model being tested #}
   -- {# but first we mask previous occurrences that could be there before the render (very unlikely to happen) #}

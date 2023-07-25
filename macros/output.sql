@@ -51,12 +51,12 @@
     {% set cells = [] %}
     {% for cell_value in row %}
       {% set col_index = loop.index0 %}
-        {% set padded = dbt_unit_testing.pad(cell_value, columns_info[col_index].max_length, pad_right=cell_value is string) %}
-        {% if columns_info[col_index].has_differences %}
-          {% do cells.append("{RED}" ~ padded ~ "{RESET}") %}
-        {% else %}
-          {% do cells.append(padded) %}
-        {% endif %}
+      {% set padded = dbt_unit_testing.pad(cell_value, columns_info[col_index].max_length, pad_right=cell_value is string) %}
+      {% if columns_info[col_index].has_differences %}
+        {% do cells.append("{RED}" ~ padded ~ "{RESET}") %}
+      {% else %}
+        {% do cells.append(padded) %}
+      {% endif %}
     {% endfor %}
     {{ dbt_unit_testing.println("| " ~ cells | join(" | ") ~ " |")}}
   {% endfor %}
@@ -82,4 +82,8 @@
 
 {% macro println(s) %}
   {% do log(dbt_unit_testing.parse_colors(s ~ "{RESET}"), info=true) %}
+{% endmacro %}
+
+{% macro print_warning(s) %}
+  {% do log(dbt_unit_testing.parse_colors("{YELLOW}" ~ s ~ "{RESET}"), info=true) %}
 {% endmacro %}
