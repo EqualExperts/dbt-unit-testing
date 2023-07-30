@@ -28,7 +28,7 @@ dbt run-operation macro_with_ref --target "$PROFILE"
 # create seeds in the database
 dbt seed --target "$PROFILE" --select seeds/real_seeds
 # run tests with no database dependency
-dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE" --exclude tag:db-dependency --exclude tag:versioned
+dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE" --exclude tag:versioned tag:db-dependency
 dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE",tag:"$DBT_VERSION" --exclude tag:db-dependency
 
 # create sources in the database
