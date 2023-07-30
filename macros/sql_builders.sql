@@ -37,11 +37,15 @@
 {% endmacro %}
 
 {% macro ref_cte_name(node) %}
-  {% if node.project_or_package == model.package_name %}
-    {{ return (dbt_unit_testing.quote_identifier(node.name)) }}
-  {% else %}
-    {{ return (dbt_unit_testing.quote_identifier([node.package_name, node.name] | join("__"))) }}
+  {% set node = dbt_unit_testing.model_node(node) %}
+  {% set parts = [node.name] %}
+  {% if node.package_name != model.package_name %}
+    {% set parts = [node.package_name] + parts %}
   {% endif %}
+  {% if node.version is not none %}
+    {% set parts = parts + [node.version] %}
+  {% endif %}
+  {{ return (dbt_unit_testing.quote_identifier(parts | join("__"))) }}
 {% endmacro %}
 
 {% macro source_cte_name(node) %}

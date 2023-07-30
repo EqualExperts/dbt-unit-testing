@@ -7,6 +7,11 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
+if [ -z "$2" ]; then
+  echo 'Please provide dbt version'
+  exit 1
+fi
+
 PROFILE=$1
 
 cd integration-tests || exit
@@ -23,12 +28,13 @@ dbt run-operation macro_with_ref --target "$PROFILE"
 # create seeds in the database
 dbt seed --target "$PROFILE" --select seeds/real_seeds
 # run tests with no database dependency
-dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE" --exclude tag:db-dependency
+dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE" --exclude tag:db-dependency --exclude tag:versioned
+dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE",tag:"$DBT_VERSION" --exclude tag:db-dependency
 
 # create sources in the database
 dbt seed --target "$PROFILE" --select seeds/existing_sources
 # create models in the database for tests that depends on database models
-dbt run --target "$PROFILE" --select tag:add-to-database  
+dbt run --target "$PROFILE" --select tag:add-to-database
 
 # run tests with database dependency
 dbt test --target "$PROFILE" --select tag:unit-test,tag:"$PROFILE",tag:db-dependency

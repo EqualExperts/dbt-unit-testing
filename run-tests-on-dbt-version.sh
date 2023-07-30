@@ -33,4 +33,4 @@ pip install "dbt-$PROFILE==$DBT_VERSION"
 
 source "$VENV_FOLDER/bin/activate"
 
-"$SCRIPT_DIR/$TEST_SCRIPT.sh" "$PROFILE"
+"$SCRIPT_DIR/$TEST_SCRIPT.sh" "$PROFILE" "$DBT_VERSION"

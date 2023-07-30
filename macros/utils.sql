@@ -66,19 +66,27 @@
   {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
 {% endmacro %}
 
-{% macro graph_node_by_prefix (prefix, node) %}
-  {{ return (graph.nodes[prefix ~ "." ~ node.package_name ~ "." ~ node.name])}}
-{% endmacro %}
-
 {% macro model_node (node) %}
-  {% set node = nil
-      | default(dbt_unit_testing.graph_node_by_prefix("model", node))
-      | default(dbt_unit_testing.graph_node_by_prefix("snapshot", node)) 
-      | default(dbt_unit_testing.graph_node_by_prefix("seed", node)) %}
-  {% if not node %}
-    {{ dbt_unit_testing.raise_error("Node " ~ node.package_name ~ "." ~ node.name ~ " not found.") }}
+  {% set graph_nodes = graph.nodes.values() | 
+    selectattr('package_name', 'equalto', node.package_name) | 
+    selectattr('name', 'equalto', node.name) | 
+    list %}
+  {% if graph_nodes | length > 0 %}
+    {% if node.version is defined and node.version is not none %}
+      {% set graph_nodes = graph_nodes | selectattr('version', 'equalto', node.version) | list %}
+    {% else %}
+      {% set latest_version = graph_nodes[0].latest_version %}
+      {% if latest_version is defined and latest_version is not none %}
+        {% set graph_nodes = graph_nodes | selectattr('version', 'equalto', latest_version) | list %}
+      {% endif %}
+    {% endif %}
   {% endif %}
-  {{ return (node) }}
+  {% if graph_nodes | length == 0 %}
+    {% set node_version = '_v' ~ node.version if node.version is defined and node.version is not none else '' %}
+    {{ dbt_unit_testing.raise_error("Node " ~ node.package_name ~ "." ~ node.name ~ node_version ~ " not found.") }}
+  {% endif %}
+  {% set graph_node = graph_nodes[0] %}
+  {{ return (graph_node) }}
 {% endmacro %}
 
 {% macro source_node(node) %}
@@ -188,5 +196,9 @@
   {% set test_context = context.get("__DUT_TEST_CONTEXT__", {}) %}
   {% set test_key = this.name %}
   {% do context.update({test_key: {}}) %}
+{% endmacro %}
+
+{% macro version_bigger_or_equal_to(v) %}
+  {{ return (dbt_version >= v )}}
 {% endmacro %}
 
