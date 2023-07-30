@@ -3,7 +3,9 @@
 
   {% if execute %}
     {% set mocks_and_expectations_json_str = caller() %}
-    {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
+    {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
+    {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
+    {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
     {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
 
     {% if not test_report.succeeded %}
@@ -15,12 +17,12 @@
   {% endif %}
 {% endmacro %}
 
-{% macro build_configuration_and_test_queries(model_name, test_description, options, mocks_and_expectations_json_str) %}
-  {% set node = {"package_name": model.package_name, "name": model_name} %}
-  {{ dbt_unit_testing.set_test_context("model_being_tested", dbt_unit_testing.ref_cte_name(node)) }}
+{% macro build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
+  {{ dbt_unit_testing.set_test_context("model_being_tested", dbt_unit_testing.ref_cte_name(model_node)) }}
   {% set test_configuration = {
-    "model_name": model_name, 
+    "model_name": model_node.model_name, 
     "description": test_description, 
+    "model_node": model_node,
     "options": dbt_unit_testing.merge_configs([options])} 
   %}
   {{ dbt_unit_testing.set_test_context("options", test_configuration.options) }}
@@ -74,8 +76,7 @@
 
 {% macro build_test_queries(test_configuration) %}
   {% set expectations = test_configuration.expectations %}
-  {% set node = {"package_name": model.package_name, "name": test_configuration.model_name} %}
-  {% set model_node = dbt_unit_testing.model_node(node) %}
+  {% set model_node = dbt_unit_testing.model_node(test_configuration.model_node) %}
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
   {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
 

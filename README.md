@@ -36,7 +36,7 @@ Add the following to packages.yml
 ```yaml
 packages:
   - git: "https://github.com/EqualExperts/dbt-unit-testing"
-    revision: v0.2.9
+    revision: v0.3.2
 ```
 
 [read the docs](https://docs.getdbt.com/docs/package-management) for more information on installing packages.
@@ -355,12 +355,12 @@ To be able to mock the models and sources in tests, in your dbt models you **mus
 Alternatively, if you prefer to keep using the standard `ref` macro in the models, you can add these macros to your project:
 
 ```jinja
-{% macro ref(model_name) %}
-   {{ return(dbt_unit_testing.ref(model_name)) }}
+{% macro ref() %}
+   {{ return(dbt_unit_testing.ref(*varargs, **kwargs)) }}
 {% endmacro %}
 
-{% macro source(source, model_name) %}
-   {{ return(dbt_unit_testing.source(source, model_name)) }}
+{% macro source() %}
+   {{ return(dbt_unit_testing.source(*varargs, **kwargs)) }}
 {% endmacro %}
 ```
 
@@ -370,6 +370,56 @@ If you need to use the original dbt *ref* macro for some reason (in *dbt_utils.s
 select {{ dbt_utils.star(builtins.ref('some_model')) }}
 from {{ ref('some_model') }}
 ```
+
+## Model versions
+
+You can specify a model version on the `dbt_unit_testing.ref` macro, the same way you do on the dbt ref macro:
+
+```jinja
+{% call dbt_unit_testing.ref('some_model', version=3) %}
+```
+
+or
+
+```jinja
+{% call dbt_unit_testing.ref('some_model', v=3) %}
+```
+
+if you are overriding the ref and source macros in your project, please use the new way of doing it ([here](#requirement)). This is necessary for the version parameter to work:
+
+```jinja
+{% macro ref() %}
+   {{ return(dbt_unit_testing.ref(*varargs, **kwargs)) }}
+{% endmacro %}
+
+{% macro source() %}
+   {{ return(dbt_unit_testing.source(*varargs, **kwargs)) }}
+{% endmacro %}
+```
+
+### Testing Model versions
+
+You can test a specific model version by specifying the `version` parameter on the `dbt_unit_testing.test` macro:
+
+```jinja
+{% call dbt_unit_testing.test('some_model', 'should return 1', version=3) %}
+  {% call dbt_unit_testing.expect() %}
+    select 1
+  {% endcall %}
+{% endcall %}
+```
+
+If `version` is not specified, the test will run against the latest version of the model.
+
+It is also possible to mock a specific model version, again by specifying the `version` parameter on the `dbt_unit_testing.mock_ref` macro:
+
+```jinja
+{% call dbt_unit_testing.mock_ref('some_model', version=3) %}
+  select 1
+{% endcall %}
+```
+
+If `version` is not specified, the latest version of the model will be mocked.
 
 ## Incremental models
 
