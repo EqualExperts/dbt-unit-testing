@@ -199,7 +199,16 @@
   {% do context.update({test_key: {}}) %}
 {% endmacro %}
 
+{% macro split_and_pad_and_join(s, pad) %}
+  {% set parts = s.split('.') %}
+  {% set parts_2 = [] %}
+  {% for p in parts %}
+    {% do parts_2.append(dbt_unit_testing.pad(parts[loop.index-1], pad, pad_right=true)) %}
+  {% endfor %}
+  {{ return (parts_2 | join('.')) }}
+{% endmacro %}
+
 {% macro version_bigger_or_equal_to(v) %}
-  {{ return (dbt_version >= v )}}
+  {{ return (dbt_unit_testing.split_and_pad_and_join(dbt_version, 5) >= dbt_unit_testing.split_and_pad_and_join(v, 5)) }}
 {% endmacro %}
 

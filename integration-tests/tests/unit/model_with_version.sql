@@ -4,7 +4,7 @@
     )
 }}
 
-{% call dbt_unit_testing.test('model_with_version', 'version1 ', version=1) %}
+{% call dbt_unit_testing.test('model_with_version', 'version 1', version=1) %}
   {% call dbt_unit_testing.expect() %}
     select 1 as a
   {% endcall %}
