@@ -137,11 +137,11 @@
   {{ return (dbt_unit_testing.merge_jsons([unit_tests_config] + configs)) }}
 {% endmacro %}
 
-{% macro quote_identifier(identifier) %}
-    {{ return(adapter.dispatch('quote_identifier','dbt_unit_testing')(identifier)) }}
+{% macro quote_identifier(identifier, preserve_case=false) %}
+    {{ return(adapter.dispatch('quote_identifier','dbt_unit_testing')(identifier, preserve_case)) }}
 {% endmacro %}
 
-{% macro default__quote_identifier(identifier) -%}
+{% macro default__quote_identifier(identifier, preserve_case) -%}
     {% if identifier.startswith('"') %}
       {{ return(identifier) }}
     {% else %}
@@ -149,7 +149,7 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro bigquery__quote_identifier(identifier) %}
+{% macro bigquery__quote_identifier(identifier, preserve_case) %}
     {% if identifier.startswith('`') %}
       {{ return(identifier) }}
     {% else %}
@@ -157,9 +157,11 @@
     {% endif %}
 {% endmacro %}
 
-{% macro snowflake__quote_identifier(identifier) %}
+{% macro snowflake__quote_identifier(identifier, preserve_case) %}
     {% if identifier.startswith('"') %}
       {{ return(identifier) }}
+    {% elif preserve_case %}
+      {{ return('"' ~ identifier ~ '"') }}
     {% else %}
       {{ return('"' ~ identifier | upper ~ '"') }}
     {% endif %}
