@@ -11,8 +11,8 @@
     {% if not test_report.succeeded %}
       {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
     {% endif %}
-    
-    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}    
+
+    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}
     {{ dbt_unit_testing.clear_test_context() }}
   {% endif %}
 {% endmacro %}
@@ -20,15 +20,15 @@
 {% macro build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
   {{ dbt_unit_testing.set_test_context("model_being_tested", dbt_unit_testing.ref_cte_name(model_node)) }}
   {% set test_configuration = {
-    "model_name": model_node.model_name, 
-    "description": test_description, 
+    "model_name": model_node.model_name,
+    "description": test_description,
     "model_node": model_node,
-    "options": dbt_unit_testing.merge_configs([options])} 
+    "options": dbt_unit_testing.merge_configs([options])}
   %}
   {{ dbt_unit_testing.set_test_context("options", test_configuration.options) }}
 
   {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
-  
+
   {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
   {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
 

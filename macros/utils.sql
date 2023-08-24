@@ -67,10 +67,10 @@
 {% endmacro %}
 
 {% macro model_node (node) %}
-  {% set graph_nodes = graph.nodes.values() | 
-    selectattr('resource_type', 'in', ['model', 'snapshot', 'seed']) | 
-    selectattr('package_name', 'equalto', node.package_name) | 
-    selectattr('name', 'equalto', node.name) | 
+  {% set graph_nodes = graph.nodes.values() |
+    selectattr('resource_type', 'in', ['model', 'snapshot', 'seed']) |
+    selectattr('package_name', 'equalto', node.package_name) |
+    selectattr('name', 'equalto', node.name) |
     list %}
   {% if graph_nodes | length > 0 %}
     {% if node.version is defined and node.version is not none %}
