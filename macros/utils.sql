@@ -23,9 +23,20 @@
   {{ return(columns) }}
 {% endmacro %}
 
-{% macro quote_and_join_columns(columns) %}
-  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_identifier) | join(",") %}
-  {{ return (columns) }}
+{% macro quote_and_join_columns(columns, convert_columns, add_alias = false) %}
+    {% set result = [] %}
+    {% for column in columns %}
+        {% if column in convert_columns %}
+            {% set modified_column = "TO_JSON_STRING(" ~ dbt_unit_testing.quote_identifier(column) ~ ")" %}
+            {% if add_alias %}
+                {% set modified_column = modified_column ~ " AS " ~ dbt_unit_testing.quote_identifier(column) %}
+            {% endif %}
+        {% else %}
+            {% set modified_column = dbt_unit_testing.quote_identifier(column) %}
+        {% endif %}
+        {% do result.append(modified_column) %}
+    {% endfor %}
+    {{ return(result | join(", ")) }}
 {% endmacro %}
 
 {% macro sql_encode(s) %}

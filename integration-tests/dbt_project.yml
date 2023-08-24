@@ -33,3 +33,5 @@ vars:
     type_separator: "::"
     diff_column: "diff"
     count_column: "count"
+    convert_columns: []
+    udf_definitions: ""
