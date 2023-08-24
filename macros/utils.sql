@@ -23,14 +23,11 @@
   {{ return(columns) }}
 {% endmacro %}
 
-{% macro quote_and_join_columns(columns, convert_columns, add_alias = false) %}
+{% macro quote_and_join_columns(columns, convert_columns) %}
     {% set result = [] %}
     {% for column in columns %}
         {% if column in convert_columns %}
-            {% set modified_column = "TO_JSON_STRING(" ~ dbt_unit_testing.quote_identifier(column) ~ ")" %}
-            {% if add_alias %}
-                {% set modified_column = modified_column ~ " AS " ~ dbt_unit_testing.quote_identifier(column) %}
-            {% endif %}
+            {% set modified_column = "TO_JSON_STRING(" ~ dbt_unit_testing.quote_identifier(column) ~ ")" ~ " AS " ~ dbt_unit_testing.quote_identifier(column) %}
         {% else %}
             {% set modified_column = dbt_unit_testing.quote_identifier(column) %}
         {% endif %}

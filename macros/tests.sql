@@ -78,21 +78,20 @@
   {% set expectations = test_configuration.expectations %}
   {% set model_node = dbt_unit_testing.model_node(test_configuration.model_node) %}
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
+  {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
   {% set convert_columns = test_configuration.options.convert_columns | default("convert_columns") %}
-  {% set select_columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values), convert_columns, add_alias=true) %}
-  {% set group_columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values), convert_columns) %}
-  {% set result_columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
+  {% set select_columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values), convert_columns) %}
 
   {% set diff_column = test_configuration.options.diff_column | default("diff") %}
   {% set count_column = test_configuration.options.count_column | default("count") %}
   {% set udf_definitions = test_configuration.options.udf_definitions | default("udf_definitions") %}
 
   {%- set actual_query -%}
-    select count(1) as {{ count_column }}, {{ select_columns }} from ( {{ model_complete_sql }} ) as s group by {{ group_columns }}
+    select count(1) as {{ count_column }}, {{ select_columns }} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
   {% endset %}
 
   {%- set expectations_query -%}
-    select count(1) as {{ count_column }}, {{ select_columns }} from ({{ expectations.input_values }}) as s group by {{ group_columns }}
+    select count(1) as {{ count_column }}, {{ select_columns }} from ({{ expectations.input_values }}) as s group by {{ columns }}
   {% endset %}
 
   {%- set test_query -%}
@@ -106,14 +105,14 @@
     ),
 
     extra_entries as (
-    select '+' as {{ diff_column }}, {{ count_column }}, {{ result_columns }} from actual
+    select '+' as {{ diff_column }}, {{ count_column }}, {{ columns }} from actual
     {{ except() }}
-    select '+' as {{ diff_column }}, {{ count_column }}, {{ result_columns }} from expectations),
+    select '+' as {{ diff_column }}, {{ count_column }}, {{ columns }} from expectations),
 
     missing_entries as (
-    select '-' as {{ diff_column }}, {{ count_column }}, {{ result_columns }} from expectations
+    select '-' as {{ diff_column }}, {{ count_column }}, {{ columns }} from expectations
     {{ except() }}
-    select '-' as {{ diff_column }}, {{ count_column }}, {{ result_columns }} from actual)
+    select '-' as {{ diff_column }}, {{ count_column }}, {{ columns }} from actual)
 
     select * from extra_entries
     UNION ALL
