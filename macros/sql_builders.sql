@@ -42,7 +42,7 @@
   {% if node.package_name != model.package_name %}
     {% set parts = [node.package_name] + parts %}
   {% endif %}
-  {% if node.version is not none %}
+  {% if dbt_unit_testing.has_value(node.version)%}
     {% set parts = parts + [node.version] %}
   {% endif %}
   {{ return (dbt_unit_testing.quote_identifier(parts | join("__"))) }}
@@ -81,7 +81,7 @@
     {%- if node.resource_type == "source" %}
       {% set name = node.identifier %}
     {%- elif node.resource_type == "snapshot" %}
-      {%- if node.config.alias is not none %}
+      {%- if dbt_unit_testing.has_value(node.config.alias) %}
         {% set name = node.config.alias %}
       {%- else %}
         {% set name = node.name %}

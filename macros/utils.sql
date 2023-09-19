@@ -66,6 +66,10 @@
   {{ return (graph.nodes[node_id] if node_id in graph.nodes else graph.sources[node_id]) }}
 {% endmacro %}
 
+{% macro has_value(v) %}
+  {{ return (v is defined and v is not none) }}
+{% endmacro %}
+
 {% macro model_node (node) %}
   {% set graph_nodes = graph.nodes.values() | 
     selectattr('resource_type', 'in', ['model', 'snapshot', 'seed']) | 
@@ -73,17 +77,17 @@
     selectattr('name', 'equalto', node.name) | 
     list %}
   {% if graph_nodes | length > 0 %}
-    {% if node.version is defined and node.version is not none %}
+    {% if dbt_unit_testing.has_value(node.version) %}
       {% set graph_nodes = graph_nodes | selectattr('version', 'equalto', node.version) | list %}
     {% else %}
       {% set latest_version = graph_nodes[0].latest_version %}
-      {% if latest_version is defined and latest_version is not none %}
+      {% if dbt_unit_testing.has_value(latest_version) %}
         {% set graph_nodes = graph_nodes | selectattr('version', 'equalto', latest_version) | list %}
       {% endif %}
     {% endif %}
   {% endif %}
   {% if graph_nodes | length == 0 %}
-    {% set node_version = '_v' ~ node.version if node.version is defined and node.version is not none else '' %}
+    {% set node_version = '_v' ~ node.version if dbt_unit_testing.has_value(node.version) else '' %}
     {{ dbt_unit_testing.raise_error("Node " ~ node.package_name ~ "." ~ node.name ~ node_version ~ " not found.") }}
   {% endif %}
   {% set graph_node = graph_nodes[0] %}
