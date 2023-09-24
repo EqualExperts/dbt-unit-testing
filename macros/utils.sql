@@ -144,6 +144,14 @@
     {% endif %}
 {%- endmacro %}
 
+{% macro spark__quote_identifier(identifier) %}
+    {% if identifier.startswith('`') %}
+      {{ return(identifier) }}
+    {% else %}
+      {{ return('`' ~ identifier ~ '`') }}
+    {% endif %}
+{% endmacro %}
+
 {% macro bigquery__quote_identifier(identifier) %}
     {% if identifier.startswith('`') %}
       {{ return(identifier) }}
