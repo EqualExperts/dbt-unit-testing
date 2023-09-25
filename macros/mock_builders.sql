@@ -83,7 +83,7 @@
     {% set input_values_sql %}
       {% set node_sql = dbt_unit_testing.build_node_sql(model_node, options.use_database_models) %}
         select * from ({{ input_values_sql }}) as m1
-        left join (select {{ missing_columns | join (",")}}
+        left join (select {{ dbt_unit_testing.quote_and_join_columns(missing_columns)}}
                   from ({{ node_sql }}) as m2) as m3 on false
     {%- endset -%}
   {%- endif -%}
