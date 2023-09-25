@@ -20,7 +20,7 @@
 {% macro build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
   {{ dbt_unit_testing.set_test_context("model_being_tested", dbt_unit_testing.ref_cte_name(model_node)) }}
   {% set test_configuration = {
-    "model_name": model_node.model_name, 
+    "model_name": model_node.name, 
     "description": test_description, 
     "model_node": model_node,
     "options": dbt_unit_testing.merge_configs([options])} 
