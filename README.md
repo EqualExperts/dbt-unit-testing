@@ -109,6 +109,20 @@ The first line is boilerplate we can't avoid:
 
 We leverage the command dbt test to run the unit tests; then, we need a way to isolate the unit tests. The rest of the lines are the test itself, the mocks (test setup) and expectations.
 
+## Running tests
+
+The framework leverages the dbt test command to run the tests. You can run all the tests in your project with the following command:
+
+```bash
+dbt test
+```
+
+If you want to run just the unit tests, you can use the following command:
+
+```bash
+dbt test --select tag:unit-test
+```
+
 ## Available Macros
 
 | macro name                   | description                                     |
