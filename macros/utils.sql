@@ -19,6 +19,7 @@
 {% endmacro %}
 
 {% macro extract_columns_difference(cl1, cl2) %}
+  !! WRONG !!
   {% set columns = cl1 | reject('in', cl2) | list %}
   {{ return(columns) }}
 {% endmacro %}

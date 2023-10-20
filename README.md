@@ -15,6 +15,7 @@ You can test models independently by mocking their dependencies (models, sources
   - [Main Features](#main-features)
 - [Documentation](#documentation)
   - [Anatomy of a test](#anatomy-of-a-test)
+  - [Running Tests](#running-tests)
   - [Available Macros](#available-macros)
   - [Test Examples](#test-examples)
   - [Different ways to build mock values](#different-ways-to-build-mock-values)
