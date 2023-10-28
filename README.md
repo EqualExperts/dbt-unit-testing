@@ -292,7 +292,6 @@ With the above configuration, you could write your tests like this:
   {% endcall %}
 {% endcall %}
 
-{% endcall %}
 ```
 
 ## Mocking
