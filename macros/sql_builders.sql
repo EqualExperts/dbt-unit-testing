@@ -38,7 +38,7 @@
 
 {% macro ref_cte_name(node) %}
   {% set node = dbt_unit_testing.model_node(node) %}
-  {% set parts = [node.name] %}
+  {% set parts = ["DBT_CTE", node.name] %}
   {% if node.package_name != model.package_name %}
     {% set parts = [node.package_name] + parts %}
   {% endif %}
