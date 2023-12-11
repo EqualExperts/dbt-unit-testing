@@ -110,6 +110,46 @@ The first line is boilerplate we can't avoid:
 
 We leverage the command dbt test to run the unit tests; then, we need a way to isolate the unit tests. The rest of the lines are the test itself, the mocks (test setup) and expectations.
 
+### Creating multiple tests in the same file
+
+When creating multiple tests in the same test file, you need to make sure they are all separated by an `UNION ALL` statement: 
+
+```
+{{ config(tags=['unit-test']) }}
+
+{% call dbt_unit_testing.test ('[Model to Test]','[Test Name]') %}
+  {% call dbt_unit_testing.mock_ref ('[model name]') %}
+     select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_source('[source name]') %}
+    select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect() %}
+    select  ...
+  {% endcall %}
+
+{% endcall %}
+
+UNION ALL
+
+{% call dbt_unit_testing.test ('[Model to Test]','[Another Test]') %}
+  {% call dbt_unit_testing.mock_ref ('[model name]') %}
+     select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_source('[source name]') %}
+    select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect() %}
+    select  ...
+  {% endcall %}
+
+{% endcall %}
+```
+
 ## Running tests
 
 The framework leverages the dbt test command to run the tests. You can run all the tests in your project with the following command:
