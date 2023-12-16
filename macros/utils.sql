@@ -24,9 +24,47 @@
   {{ return(columns) }}
 {% endmacro %}
 
-{% macro quote_and_join_columns(columns) %}
-  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_identifier) | join(",") %}
-  {{ return (columns) }}
+{% macro quote_and_join_columns(columns, columns_to_json) %}
+   {{ return(adapter.dispatch('quote_and_join_columns')(columns, columns_to_json)) }}
+{% endmacro %}
+
+{% macro default__quote_and_join_columns(columns, columns_to_json) %}
+  {% set result = [] %}
+  {% for column in columns %}
+    {% if column in convert_columns %}
+      {% set modified_column = "to_json_string(" ~ dbt_unit_testing.quote_identifier(column) ~ ")" ~ " as " ~ dbt_unit_testing.quote_identifier(column) %}
+    {% else %}
+      {% set modified_column = dbt_unit_testing.quote_identifier(column) %}
+    {% endif %}
+    {% do result.append(modified_column) %}
+  {% endfor %}
+  {{ return(result | join(", ")) }}
+{% endmacro %}
+
+{% macro bigquery__quote_and_join_columns(columns, columns_to_json) %}
+  {% set result = [] %}
+  {% for column in columns %}
+    {% if column in columns_to_json %}
+      {% set modified_column = "to_json_string(" ~ dbt_unit_testing.quote_identifier(column) ~ ")" ~ " as " ~ dbt_unit_testing.quote_identifier(column) %}
+    {% else %}
+      {% set modified_column = dbt_unit_testing.quote_identifier(column) %}
+    {% endif %}
+    {% do result.append(modified_column) %}
+  {% endfor %}
+  {{ return(result | join(", ")) }}
+{% endmacro %}
+
+% macro duckdb__quote_and_join_columns(columns, columns_to_json) %}
+  {% set result = [] %}
+  {% for column in columns %}
+    {% if column in columns_to_json %}
+      {% set modified_column = "to_json(" ~ dbt_unit_testing.quote_identifier(column) ~ ")" ~ " as " ~ dbt_unit_testing.quote_identifier(column) %}
+    {% else %}
+      {% set modified_column = dbt_unit_testing.quote_identifier(column) %}
+    {% endif %}
+    {% do result.append(modified_column) %}
+  {% endfor %}
+  {{ return(result | join(", ")) }}
 {% endmacro %}
 
 {% macro sql_encode(s) %}
@@ -72,10 +110,10 @@
 {% endmacro %}
 
 {% macro model_node (node) %}
-  {% set graph_nodes = graph.nodes.values() | 
-    selectattr('resource_type', 'in', ['model', 'snapshot', 'seed']) | 
-    selectattr('package_name', 'equalto', node.package_name) | 
-    selectattr('name', 'equalto', node.name) | 
+  {% set graph_nodes = graph.nodes.values() |
+    selectattr('resource_type', 'in', ['model', 'snapshot', 'seed']) |
+    selectattr('package_name', 'equalto', node.package_name) |
+    selectattr('name', 'equalto', node.name) |
     list %}
   {% if graph_nodes | length > 0 %}
     {% if dbt_unit_testing.has_value(node.version) %}

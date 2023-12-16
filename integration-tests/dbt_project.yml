@@ -33,3 +33,4 @@ vars:
     type_separator: "::"
     diff_column: "diff"
     count_column: "count"
+    columns_to_json: []
