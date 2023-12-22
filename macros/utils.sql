@@ -25,7 +25,7 @@
 {% endmacro %}
 
 {% macro quote_and_join_columns(columns) %}
-  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_identifier) | join(",") %}
+  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_identifier) | join(",") %}
   {{ return (columns) }}
 {% endmacro %}
 
@@ -131,6 +131,22 @@
   {% set unit_tests_config = var("unit_tests_config", {}) %}
   {% set unit_tests_config = {} if unit_tests_config is none else unit_tests_config %}
   {{ return (dbt_unit_testing.merge_jsons([unit_tests_config] + configs)) }}
+{% endmacro %}
+
+{% macro quote_column_identifier(identifier) %}
+    {{ return(adapter.dispatch('quote_identifier','dbt_unit_testing')(identifier)) }}
+{% endmacro %}
+
+{% macro default__quote_column_identifier(identifier) -%}
+    {{ return(quote_identifier(identifier)) }}
+{%- endmacro %}
+
+{% macro snowflake__quote_column_identifier(identifier) %}
+    {% if identifier.startswith('"') %}
+      {{ return(identifier) }}
+    {% else %}
+      {{ return('"' ~ identifier ~ '"') }}
+    {% endif %}
 {% endmacro %}
 
 {% macro quote_identifier(identifier) %}
