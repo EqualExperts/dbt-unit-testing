@@ -134,7 +134,7 @@
 {% endmacro %}
 
 {% macro quote_column_identifier(identifier) %}
-    {{ return(adapter.dispatch('quote_identifier','dbt_unit_testing')(identifier)) }}
+    {{ return(adapter.dispatch('quote_column_identifier','dbt_unit_testing')(identifier)) }}
 {% endmacro %}
 
 {% macro default__quote_column_identifier(identifier) -%}
