@@ -1,7 +1,7 @@
 {% macro test(model_name, test_description='(no description)', options={}) %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
-  {% if execute %}
+  {% if execute and flags.WHICH == 'test' %}
     {% set mocks_and_expectations_json_str = caller() %}
     {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
     {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
