@@ -157,7 +157,7 @@
     {% if identifier.startswith('"') %}
       {{ return(identifier) }}
     {% else %}
-      {{ return('"' ~ identifier | upper ~ '"') }}
+      {{ return('"' ~ identifier ~ '"') }}
     {% endif %}
 {% endmacro %}
 
