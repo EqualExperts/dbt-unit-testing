@@ -21,7 +21,7 @@ You can test models independently by mocking their dependencies (models, sources
   - [Different ways to build mock values](#different-ways-to-build-mock-values)
   - [Mocking](#mocking)
     - [Database dependencies in detail](#database-dependencies-in-detail)
-    - [Requirement](#requirement)
+    - [Important Requirement](#important-requirement)
   - [Incremental Models](#incremental-models)
   - [Available Options](#available-options)
   - [Test Feedback](#test-feedback)
@@ -96,7 +96,7 @@ The test is composed of a test setup (mocks) and expectations:
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
-    select  ...
+    select ...
   {% endcall %}
 
 {% endcall %}
@@ -114,7 +114,7 @@ We leverage the command dbt test to run the unit tests; then, we need a way to i
 
 When creating multiple tests in the same test file, you need to make sure they are all separated by an `UNION ALL` statement: 
 
-```
+```Jinja
 {{ config(tags=['unit-test']) }}
 
 {% call dbt_unit_testing.test ('[Model to Test]','[Test Name]') %}
@@ -169,8 +169,8 @@ dbt test --select tag:unit-test
 | macro name                   | description                                     |
 |------------------------------|-------------------------------------------------|
 | dbt_unit_testing.test        | Defines a Test                                  |
-| dbt_unit_testing.mock-ref    | Mocks a **model** / **snapshot** / **seed**     |
-| dbt_unit_testing.mock-source | Mocks a **source**                              |
+| dbt_unit_testing.mock_ref    | Mocks a **model** / **snapshot** / **seed**     |
+| dbt_unit_testing.mock_source | Mocks a **source**                              |
 | dbt_unit_testing.expect      | Defines Test expectations                       |
 
 ## Test Examples
@@ -315,13 +315,13 @@ With the above configuration, you could write your tests like this:
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_orders', {"input_format": "csv"}) %}
-    order_id | customer_id | order_date 
+    order_id | customer_id | order_date::date
     1        | 1           | null
     2        | 1           | null
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments', {"input_format": "csv"}) %}
-    order_id | amount
+    order_id | amount::int
     1        | 10
     2        | 10
   {% endcall %}
@@ -333,6 +333,10 @@ With the above configuration, you could write your tests like this:
 {% endcall %}
 
 ```
+
+Notice that you can specify the type of a column by adding the type name after the column name, separated by "::".
+
+The name of the type is the same as the name of the type in the database (e.g. `int`, `float`, `date`, `timestamp`, etc).
 
 ## Mocking
 
@@ -396,9 +400,9 @@ This SQL can be a pretty complex query; sometimes, it's non-performant or even a
 
 You can use the option **'use-database-models'** to avoid the recursive inspection and use the model defined in the database. Be aware that this makes a new dependency on the underlying model definition, and it needs to be updated each time you run a test.
 
-### Requirement
+### Important Requirement
 
-To be able to mock the models and sources in tests, in your dbt models you **must** use the macros  **dbt_unit_testing.ref** and **dbt_unit_testing.source**, for example:
+To be able to mock the models and sources in tests, in your dbt models you can use the macros  **dbt_unit_testing.ref** and **dbt_unit_testing.source**, for example:
 
 ```sql
 
@@ -406,7 +410,7 @@ To be able to mock the models and sources in tests, in your dbt models you **mus
 
 ```
 
-Alternatively, if you prefer to keep using the standard `ref` macro in the models, you can add these macros to your project:
+Alternatively, if you prefer to keep using the standard `ref` and `source` macros in the models, you can override them by adding these lines to your project:
 
 ```jinja
 {% macro ref() %}
@@ -550,6 +554,8 @@ To test the `is_incremental` section of your model, you must include the option 
 ```
 
 Note that in this case, we are also mocking the model being tested (`incremental_model`) to ensure the incremental logic functions correctly. It is necessary to mock the model itself when writing a test for the `is_incremental` part of the model.
+
+*Note: As previously mentioned, these type of tests are meant to test the `is_incremental` part of the model. Testing different increments strategies (such as `merge`, `delete+insert` or `insert_overwrite`) is not supported.*
 
 ## Available Options
 
