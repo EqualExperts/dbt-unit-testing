@@ -20,9 +20,9 @@
 {% macro is_incremental() %}
   {% if dbt_unit_testing.running_unit_test() %}
       {% set options = dbt_unit_testing.get_test_context("options", {}) %}
-      {% set model_being_tested = dbt_unit_testing.get_test_context("model_being_tested", "") %}
+      {% set is_incremental_should_be_true_for_this_model = dbt_unit_testing.get_test_context("is_incremental_should_be_true_for_this_model", "") %}
       {% set model_being_rendered = dbt_unit_testing.get_test_context("model_being_rendered", "") %}
-      {{ return (options.get("run_as_incremental", False) and model_being_rendered == model_being_tested and model_being_rendered != "") }}
+      {{ return (options.get("run_as_incremental", False) and model_being_rendered == is_incremental_should_be_true_for_this_model and model_being_rendered != "") }}
   {% else %}
       {{ return (dbt.is_incremental())}}
   {% endif %}

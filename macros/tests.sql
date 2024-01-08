@@ -2,6 +2,7 @@
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
   {% if execute and flags.WHICH == 'test' %}
+    {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", "") }}
     {% set mocks_and_expectations_json_str = caller() %}
     {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
     {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
@@ -18,7 +19,6 @@
 {% endmacro %}
 
 {% macro build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
-  {{ dbt_unit_testing.set_test_context("model_being_tested", dbt_unit_testing.ref_cte_name(model_node)) }}
   {% set test_configuration = {
     "model_name": model_node.name, 
     "description": test_description, 
@@ -30,6 +30,7 @@
   {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
   
   {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
+  {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", dbt_unit_testing.ref_cte_name(model_node)) }}
   {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
 
   {{ return ((test_configuration, test_queries)) }}
