@@ -1,11 +1,15 @@
 {% macro ref(project_or_package, model_name) %}
-  {% set project_or_package, model_name = dbt_unit_testing.setup_project_and_model_name(project_or_package, model_name) %}
   {% if dbt_unit_testing.running_unit_test() %}
+    {% set project_or_package, model_name = dbt_unit_testing.setup_project_and_model_name(project_or_package, model_name) %}
     {% set node_version = kwargs["version"] | default (kwargs["v"]) %}
     {% set node = {"package_name": project_or_package, "name": model_name, "version": node_version} %}
     {{ return (dbt_unit_testing.ref_cte_name(node)) }}
   {% else %}
-    {{ return (builtins.ref(project_or_package, model_name, **kwargs)) }}
+    {% if model_name is undefined %}
+      {{ return (builtins.ref(project_or_package, **kwargs)) }}
+    {% else %}
+      {{ return (builtins.ref(project_or_package, model_name, **kwargs)) }}
+    {% endif %}
   {% endif %}
 {% endmacro %}
 

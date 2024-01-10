@@ -97,7 +97,7 @@
 {% macro model_node (node) %}
   {% set graph_nodes = graph.nodes.values() | 
     selectattr('resource_type', 'in', ['model', 'snapshot', 'seed']) | 
-    selectattr('package_name', 'equalto', node.package_name) | 
+    selectattr('package_name', 'in', [node.package_name, project_name]) | 
     selectattr('name', 'equalto', node.name) | 
     list %}
   {% if graph_nodes | length > 0 %}
