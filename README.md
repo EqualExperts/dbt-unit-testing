@@ -23,6 +23,10 @@ You can test models independently by mocking their dependencies (models, sources
     - [Database dependencies in detail](#database-dependencies-in-detail)
     - [Important Requirement](#important-requirement)
   - [Incremental Models](#incremental-models)
+  - [Column Transformations](#column-transformations)
+    - [How to use](#how-to-use)
+    - [Use Case 1: Rounding Column Values](#use-case-1-rounding-column-values)
+    - [Use Case 2: Converting Structs to JSON Strings in BigQuery](#use-case-2-converting-structs-to-json-strings-in-bigquery)
   - [Available Options](#available-options)
   - [Test Feedback](#test-feedback)
     - [Example](#example)
@@ -557,6 +561,130 @@ Note that in this case, we are also mocking the model being tested (`incremental
 
 *Note: As previously mentioned, these type of tests are meant to test the `is_incremental` part of the model. Testing different increments strategies (such as `merge`, `delete+insert` or `insert_overwrite`) is not supported.*
 
+## Column Transformations
+
+This functionality allows for the application of transformations to columns before the execution of unit tests.
+
+Column transformations enable the alteration of column data, catering to the need for data standardization, conversion, or formatting prior to testing. This addition aims to support more sophisticated testing requirements and ensure data integrity within the testing process.
+
+### How to use
+
+To leverage the column transformations feature in `dbt-unit-testing`, you need to define a JSON structure specifying the desired transformations for each column. This structure is integrated into the unit test options. Below is an example of how to format this JSON structure:
+
+```Json
+{
+  "col_name_1": "round(col_name_1, 4)",
+  "col_name_2": "to_json_string(col_name_2)"
+}
+```
+
+You can assign this JSON into a variable and pass it into the unit test options. Below is an example of how to do this:
+
+```Jinja
+{% set column_transformations = {
+  "col_name_1": "round(col_name_1, 4)",
+  "col_name_2": "to_json_string(col_name_2)"
+} %}
+
+{% call dbt_unit_testing.test('some_model_name', options={"column_transformations": column_transformations}) %}
+
+...
+```
+
+In this example, `col_name_1` is rounded to four decimal places, and `col_name_2` is converted to a JSON string. These transformations are applied before the execution of the unit test.
+
+In addition to specifying column transformations at the individual test level, `dbt-unit-testing` also allows for a more generalized approach. You can define column transformations globally in the dbt_project.yml file. This approach allows for the application of column transformations to all unit tests in the project.
+
+Here is an example of how to set up column transformations in the dbt_project.yml file:
+
+```yaml
+vars:
+  unit_tests_config:
+    column_transformations:
+      some_model_name:
+        col_name_1: round(col_name_1, 4)
+        # ... additional transformations for 'some_model_name'
+      another_model_name:
+        # ... transformations for 'another_model_name'
+```
+
+In this configuration, transformations such as `round(col_name_1, 4)` are applied to `col_name_1` in the context of `some_model_name`.
+
+You can also use the special token `##column##` in your column transformations. This token will be replaced by the column name in the test query, properly quoted for the current database adapter:
+
+
+```yaml
+vars:
+  unit_tests_config:
+    column_transformations:
+      some_model_name:
+        col_name_1: "round(##column##, 2)"
+        # ... additional transformations
+```
+
+In this example, `round(##column##)` will be evaluated such that `##column##` is replaced with the properly quoted name of `col_name_1`. This ensures that the column name is correctly formatted for the database adapter in use.
+
+### Use Case 1: Rounding Column Values
+
+In many scenarios, especially when dealing with floating-point numbers, precision issues can arise, leading to inconsistencies in data testing. For example, calculations or aggregations may result in floating-point numbers with excessive decimal places, making direct comparisons challenging. To address this, `dbt-unit-testing` can round these values to a specified number of decimal places, ensuring consistency and precision in tests.
+
+Consider a model, `financial_model`, which contains a column `avg_revenue` representing the average of the revenue values from another table. Due to calculations, `avg_revenue` might have an extensive number of decimal places. For testing purposes, you might want to round these values to a fixed number of decimal places.
+
+```SQL
+SELECT
+    id,
+    AVG(revenue) as avg_revenue
+FROM
+    raw_financial_data
+```
+
+You can ensure that revenue is rounded to two decimal places when testing `financial_model`, and your expectations are also rounded to five decimal places. This ensures that the test is precise and consistent.
+
+```Jinja
+{% set column_transformations = {
+  "revenue": "round(##column##, 5)"
+} %}
+
+{% call dbt_unit_testing.test('financial_model', options={"column_transformations": column_transformations}) %}
+  {% call dbt_unit_testing.mock_ref ('raw_financial_data') %}
+    select 5.0 as revenue
+    UNION ALL
+    select 2.0 as revenue
+    UNION ALL
+    select 3.0 as revenue
+  {% endcall %}
+  {% call dbt_unit_testing.expect() %}
+    select 3.33333 as revenue
+  {% endcall %}
+{% endcall %}
+```
+
+### Use Case 2: Converting Structs to JSON Strings in BigQuery
+
+In BigQuery, certain data types like structs and arrays pose a challenge for `dbt-unit-testing`, because it needs to use the EXCEPT clause. BigQuery does not support these operations directly on structs or arrays. A practical solution is to convert these complex data types into JSON strings, allowing for standard SQL operations to be applied in tests. This can be achieved using column transformations.
+
+Let's consider a model, `user_activity_model`, which includes a struct column `activity_details` in BigQuery. To facilitate testing involving grouping or comparison, we transform `activity_details` into a JSON string.
+
+```SQL
+SELECT
+    user_id,
+    activity_details -- struct column
+FROM
+    raw_user_activity
+```
+
+```Jinja
+{% set column_transformations = {
+  "activity_details": "to_json_string(##column##)"
+} %}
+
+{% call dbt_unit_testing.test('user_activity_model', options={"column_transformations": column_transformations}) %}
+  -- Test cases and assertions here
+{% endcall %}
+```
+
+In this example, the `activity_details` column, which is a struct, is transformed into a JSON string using `to_json_string(##column##)` before the execution of the unit test. This transformation facilitates operations like grouping and EXCEPT in BigQuery by converting the struct into a more manageable string format.
+
 ## Available Options
 
 | option                      | description                     | default              | scope*              |
@@ -572,6 +700,8 @@ Note that in this case, we are also mocking the model being tested (`incremental
 | **diff_column**        | The name of the `diff` column in the test report        | diff| project/test            |
 | **count_column**        | The name of the `count` column in the test report        | count| project/test            |
 | **run_as_incremental**      | Runs the model in `incremental` mode (it has no effect if the model is not incremental)     | false| project/test            |
+| **column_transformations**      | A JSON structure specifying the desired transformations for each column. See [Column Transformations](#column-transformations) for more details.     | {}| project/test            |
+
 Notes:
 
 - **scope** is the place where the option can be defined:

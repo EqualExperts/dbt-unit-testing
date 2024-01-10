@@ -19,6 +19,8 @@
 {% endmacro %}
 
 {% macro build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
+  {% set model_name = model_node.name %}
+  {% do options.update({"column_transformations": {model_name: options.get("column_transformations", {})}}) %}
   {% set test_configuration = {
     "model_name": model_node.name, 
     "description": test_description, 
@@ -79,17 +81,21 @@
   {% set expectations = test_configuration.expectations %}
   {% set model_node = dbt_unit_testing.model_node(test_configuration.model_node) %}
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
-  {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
+  {% set column_transformations = test_configuration.options.column_transformations[test_configuration.model_name] | default({}) %}
+  {% set columns_list = dbt_unit_testing.extract_columns_list(expectations.input_values) %}
+  {% set columns_list_str = dbt_unit_testing.quote_and_join_columns(columns_list) %}
+  {% set transformed_columns_list_str = dbt_unit_testing.apply_transformations_to_columns(columns_list, column_transformations, use_alias=true) | join(", ") %}
+  {% set transformed_columns_list_for_grouping_str = dbt_unit_testing.apply_transformations_to_columns(columns_list, column_transformations, use_alias=false) | join(", ")  %}
 
   {% set diff_column = test_configuration.options.diff_column | default("diff") %}
   {% set count_column = test_configuration.options.count_column | default("count") %}
 
   {%- set actual_query -%}
-    select count(1) as {{ count_column }}, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
+    select count(1) as {{ count_column }}, {{ transformed_columns_list_str }} from ( {{ model_complete_sql }} ) as s group by {{ transformed_columns_list_for_grouping_str }}
   {% endset %}
 
   {%- set expectations_query -%}
-    select count(1) as {{ count_column }}, {{columns}} from ({{ expectations.input_values }}) as s group by {{ columns }}
+    select count(1) as {{ count_column }}, {{ transformed_columns_list_str }} from ({{ expectations.input_values }}) as s group by {{ transformed_columns_list_for_grouping_str }}
   {% endset %}
 
   {%- set test_query -%}
@@ -101,14 +107,14 @@
     ),
 
     extra_entries as (
-    select '+' as {{ diff_column }}, {{ count_column }}, {{columns}} from actual
+    select '+' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from actual
     {{ except() }}
-    select '+' as {{ diff_column }}, {{ count_column }}, {{columns}} from expectations),
+    select '+' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from expectations),
 
     missing_entries as (
-    select '-' as {{ diff_column }}, {{ count_column }}, {{columns}} from expectations
+    select '-' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from expectations
     {{ except() }}
-    select '-' as {{ diff_column }}, {{ count_column }}, {{columns}} from actual)
+    select '-' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from actual)
     
     select * from extra_entries
     UNION ALL

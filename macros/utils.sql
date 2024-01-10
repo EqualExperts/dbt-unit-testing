@@ -25,8 +25,31 @@
 {% endmacro %}
 
 {% macro quote_and_join_columns(columns) %}
-  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_identifier) | join(",") %}
+  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_identifier) | join(", ") %}
   {{ return (columns) }}
+{% endmacro %}
+
+{% macro apply_transformations_to_columns(columns, column_transformations, use_alias=true) %}
+  {% set transformed_columns = [] %}
+  {% for column in columns %}
+    {% set transformed_column = dbt_unit_testing.apply_transformations_to_column(column, column_transformations, use_alias) %}
+    {% do transformed_columns.append(transformed_column) %}
+  {% endfor %}
+  {{ return (transformed_columns) }}
+{% endmacro %}
+
+{% macro apply_transformations_to_column(column, column_transformations, use_alias) %}
+  {% set quoted_column = dbt_unit_testing.quote_identifier(column) %}
+  {% set transformation = column_transformations.get(column, "") %}
+  {% if transformation != "" %}
+    {% set transformation = transformation | replace("##column##", quoted_column) %}
+    {% if use_alias %}
+      {% set transformation = transformation ~ " as " ~ quoted_column %}
+    {% endif %}
+  {% else %}
+    {% set transformation = quoted_column %}
+  {% endif %}
+  {{ return (transformation) }}
 {% endmacro %}
 
 {% macro sql_encode(s) %}
@@ -107,12 +130,35 @@
   {% endif  %}
 {% endmacro %}
 
-{% macro merge_jsons(jsons) %}
+{% macro deep_merge_2_jsons(json1, json2) %}
+  {% set json = dbt_unit_testing.merge_json_left(json1, json2) %}
+  {% do json.update(dbt_unit_testing.merge_json_left(json2, json1)) %}
+  {{ return (json) }}
+{% endmacro %}
+
+{% macro merge_json_left(json1, json2) %}
+  {% set json = {} %}
+  {% for k,v in json1.items() %}
+    {% if v is mapping %}
+      {% set other = json2.get(k, {}) %}
+      {% if other is mapping %}
+        {% set v = dbt_unit_testing.deep_merge_2_jsons(v, other) %}
+      {% endif %}
+    {% elif v is sequence and v is not string %}
+      {% set other = json2.get(k, []) %}
+      {% if other is sequence and other is not string %}
+        {% set v = dbt_unit_testing.map((v + other) | map("tojson") | unique, fromjson) %}
+      {% endif %}
+    {% endif %}
+    {% do json.update({k: v}) %}
+  {% endfor %}
+  {{ return (json) }}
+{% endmacro %}
+
+{% macro deep_merge_jsons(jsons) %}
   {% set json = {} %}
   {% for j in jsons %}
-    {% for k,v in j.items() %}
-      {% do json.update({k: v}) %}
-    {% endfor %}
+    {% do json.update(dbt_unit_testing.deep_merge_2_jsons(json, j)) %}
   {% endfor %}
   {{ return (json) }}
 {% endmacro %}
@@ -130,7 +176,7 @@
 {% macro merge_configs(configs) %}
   {% set unit_tests_config = var("unit_tests_config", {}) %}
   {% set unit_tests_config = {} if unit_tests_config is none else unit_tests_config %}
-  {{ return (dbt_unit_testing.merge_jsons([unit_tests_config] + configs)) }}
+  {{ return (dbt_unit_testing.deep_merge_jsons([unit_tests_config] + configs)) }}
 {% endmacro %}
 
 {% macro quote_identifier(identifier) %}
