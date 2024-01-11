@@ -24,7 +24,7 @@ vars:
   unit_tests_config:
     column_transformations:
       model_for_column_transformations:
-        b: upper(b)
+        column_a: round(##column##, 5)
       model_references_model_with_structs:
         a: to_json_string(##column##)
     verbose: false
