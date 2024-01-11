@@ -38,3 +38,4 @@ vars:
     type_separator: "::"
     diff_column: "diff"
     count_column: "count"
+    last_spaces_replace_char: "."
