@@ -199,14 +199,6 @@
     {% endif %}
 {% endmacro %}
 
-{% macro snowflake__quote_identifier(identifier) %}
-    {% if identifier.startswith('"') %}
-      {{ return(identifier) }}
-    {% else %}
-      {{ return('"' ~ identifier | upper ~ '"') }}
-    {% endif %}
-{% endmacro %}
-
 {% macro cache(scope_key, key, value) %}
   {% if dbt_unit_testing.config_is_true('disable_cache') %}
     {{ return (nil) }}
