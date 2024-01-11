@@ -154,6 +154,23 @@ UNION ALL
 {% endcall %}
 ```
 
+### Expectations
+
+The expectations are the results you expect from the model. The framework compares the expectations with the actuals and shows the differences in the test report.
+
+```jinja
+{% call dbt_unit_testing.expect() %}
+  select ...
+{% endcall %}
+```
+
+You can use the macro `expect_no_rows` to test if the model returns no rows:
+
+```jinja
+{% call dbt_unit_testing.expect_no_rows() %}
+{% endcall %}
+```
+
 ## Running tests
 
 The framework leverages the dbt test command to run the tests. You can run all the tests in your project with the following command:
@@ -170,12 +187,13 @@ dbt test --select tag:unit-test
 
 ## Available Macros
 
-| macro name                   | description                                     |
-|------------------------------|-------------------------------------------------|
-| dbt_unit_testing.test        | Defines a Test                                  |
-| dbt_unit_testing.mock_ref    | Mocks a **model** / **snapshot** / **seed**     |
-| dbt_unit_testing.mock_source | Mocks a **source**                              |
-| dbt_unit_testing.expect      | Defines Test expectations                       |
+| macro name                      | description                                     |
+|---------------------------------|-------------------------------------------------|
+| dbt_unit_testing.test           | Defines a Test                                  |
+| dbt_unit_testing.mock_ref       | Mocks a **model** / **snapshot** / **seed**     |
+| dbt_unit_testing.mock_source    | Mocks a **source**                              |
+| dbt_unit_testing.expect         | Defines the Test expectations                   |
+| dbt_unit_testing.expect_no_rows | Used to test if the model returns no rows       |
 
 ## Test Examples
 
@@ -701,6 +719,7 @@ In this example, the `activity_details` column, which is a struct, is transforme
 | **count_column**        | The name of the `count` column in the test report        | count| project/test            |
 | **run_as_incremental**      | Runs the model in `incremental` mode (it has no effect if the model is not incremental)     | false| project/test            |
 | **column_transformations**      | A JSON structure specifying the desired transformations for each column. See [Column Transformations](#column-transformations) for more details.     | {}| project/test            |
+| last_spaces_replace_char | Replace the spaces at the end of the values with another character. See [Test Feedback](#test-feedback) for more details. | (space) | project/test |
 
 Notes:
 
@@ -739,6 +758,28 @@ Rows mismatch:
 ```
 
 The first line was not on the model, but the second line was.
+
+### Spaces at the end of the diff values
+
+It can be hard to spot the difference when the values have spaces at the end. To avoid this, you can use the option `last_spaces_replace_char` to replace the spaces at the end of the values with another character:
+
+```yaml
+vars:
+  unit_tests_config:
+    last_spaces_replace_char: "."
+```
+
+This will replace the spaces at the end of the values with a dot. The result will be displayed like this:
+
+```yaml
+MODEL: customers
+TEST:  should sum order values to calculate customer_lifetime_value
+Rows mismatch:
+| diff | count | some_column |
+| ---- | ----- | ----------- |
+| +    |     1 | John        |
+| -    |     1 | John..      |
+```
 
 # Known Limitations
 

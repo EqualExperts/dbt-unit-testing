@@ -1,4 +1,4 @@
-{% macro print_table(agate_table) %}
+{% macro print_table(agate_table, options={}) %}
   {% set columns_start_index = 2 %}
   {% set columns_info = [] %}
   {% for col_name in agate_table.column_names %}
@@ -47,10 +47,14 @@
   {% endfor %}
   {{ dbt_unit_testing.println("| " ~ cells | join(" | ") ~ " |")}}
 
+  {% set last_spaces_replace_char = options.last_spaces_replace_char | default(" ") %}
   {% for row in agate_table.rows %}
     {% set cells = [] %}
     {% for cell_value in row %}
       {% set col_index = loop.index0 %}
+      {% if cell_value is string %}
+        {% set cell_value = dbt_unit_testing.replace_last_spaces_with(last_spaces_replace_char, cell_value) %}
+      {% endif %}
       {% set padded = dbt_unit_testing.pad(cell_value, columns_info[col_index].max_length, pad_right=cell_value is string) %}
       {% if columns_info[col_index].has_differences %}
         {% do cells.append("{RED}" ~ padded ~ "{RESET}") %}
@@ -60,7 +64,20 @@
     {% endfor %}
     {{ dbt_unit_testing.println("| " ~ cells | join(" | ") ~ " |")}}
   {% endfor %}
+{% endmacro %}
 
+{% macro replace_last_spaces_with(replacement, s) %}
+  {% set rs = s | reverse %}
+  {% set replaced = namespace(value="", stop=false) %}
+  {% for i in range(0, rs | length) %}
+    {% if rs[i] == ' ' and not replaced.stop %}
+      {% set replaced.value = replaced.value ~ replacement %}
+    {% else %}
+      {% set replaced.value = replaced.value ~ rs[i] %}
+      {% set replaced.stop = true %}
+    {% endif %}
+  {% endfor %}
+  {{ return(replaced.value | reverse) }}
 {% endmacro %}
 
 {% macro pad(v, pad, pad_right=false, c=" ") %}
@@ -77,6 +94,7 @@
       .replace("{RED}", "\x1b[0m\x1b[31m")
       .replace("{GREEN}", "\x1b[0m\x1b[32m")
       .replace("{YELLOW}", "\x1b[0m\x1b[33m")
+      .replace("{BG_YELLOW}", "\x1b[0m\x1b[43m")
       .replace("{RESET}", "\x1b[0m")) }}
 {% endmacro %}
 

@@ -147,7 +147,7 @@
   {% endif %}
   {% if test_report.different_rows_count > 0 %}
     {{ dbt_unit_testing.println('{RED}ERROR: {YELLOW}Rows mismatch:') }}
-    {{ dbt_unit_testing.print_table(test_report.test_differences) }}
+    {{ dbt_unit_testing.print_table(test_report.test_differences, options=test_configuration.options) }}
   {% endif %}
 {% endmacro %}
 

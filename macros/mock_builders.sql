@@ -53,6 +53,17 @@
   {{ return (dbt_unit_testing.append_json(expectations)) }}
 {% endmacro %}
 
+{% macro expect_no_rows(options={}) %}
+  {% set dummy = caller() %}
+  {% set expectations = {
+      "type": "expectations",
+      "options": options,
+      "input_values": "select a from (select 1 as a) as s where false",
+    }
+  %} 
+  {{ return (dbt_unit_testing.append_json(expectations)) }}
+{% endmacro %}
+
 {% macro append_json(json) %}
   {{ return (json | tojson() ~ '####_JSON_LINE_DELIMITER_####') }}
 {% endmacro %}
