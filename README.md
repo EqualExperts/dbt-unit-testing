@@ -656,11 +656,11 @@ FROM
     raw_financial_data
 ```
 
-You can ensure that revenue is rounded to two decimal places when testing `financial_model`, and your expectations are also rounded to five decimal places. This ensures that the test is precise and consistent.
+You can ensure that `avg_revenue` is rounded to five decimal places when testing `financial_model`, and your expectations are also rounded to five decimal places. This ensures that the test is precise and consistent.
 
 ```Jinja
 {% set column_transformations = {
-  "revenue": "round(##column##, 5)"
+  "avg_revenue": "round(##column##, 5)"
 } %}
 
 {% call dbt_unit_testing.test('financial_model', options={"column_transformations": column_transformations}) %}
@@ -672,7 +672,7 @@ You can ensure that revenue is rounded to two decimal places when testing `finan
     select 3.0 as revenue
   {% endcall %}
   {% call dbt_unit_testing.expect() %}
-    select 3.33333 as revenue
+    select 3.33333 as avg_revenue
   {% endcall %}
 {% endcall %}
 ```
