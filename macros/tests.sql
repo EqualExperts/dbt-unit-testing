@@ -1,20 +1,24 @@
 {% macro test(model_name, test_description='(no description)', options={}) %}
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
-  {% if execute and flags.WHICH == 'test' %}
-    {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", "") }}
-    {% set mocks_and_expectations_json_str = caller() %}
-    {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
-    {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
-    {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
-    {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
+  {% if execute %}
+    {% if flags.WHICH == 'test' %}
+      {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", "") }}
+      {% set mocks_and_expectations_json_str = caller() %}
+      {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
+      {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
+      {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
+      {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
 
-    {% if not test_report.succeeded %}
-      {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
+      {% if not test_report.succeeded %}
+        {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
+      {% endif %}
+      
+      select 1 as a from (select 1) as t where {{ not test_report.succeeded }}    
+      {{ dbt_unit_testing.clear_test_context() }}
+    {% else %}
+      select 1 as a from (select 1) as t where false
     {% endif %}
-    
-    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}    
-    {{ dbt_unit_testing.clear_test_context() }}
   {% endif %}
 {% endmacro %}
 
