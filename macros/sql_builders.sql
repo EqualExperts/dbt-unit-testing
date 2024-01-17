@@ -91,7 +91,7 @@
     {%- endif %}
 
     {% set name_parts = dbt_unit_testing.map([node.database, node.schema, name], dbt_unit_testing.quote_identifier) %}
-    select * from {{ name_parts | join('.') }} where false
+    select * from {{ name_parts | join('.') }} where 1 = 0
   {%- else -%}
     {% if complete %}
       {{ dbt_unit_testing.build_model_complete_sql(node) }}

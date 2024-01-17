@@ -58,7 +58,7 @@
   {% set expectations = {
       "type": "expectations",
       "options": options,
-      "input_values": "select a from (select 1 as a) as s where false",
+      "no_rows": true,
     }
   %} 
   {{ return (dbt_unit_testing.append_json(expectations)) }}

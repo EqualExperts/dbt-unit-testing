@@ -14,10 +14,10 @@
         {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
       {% endif %}
       
-      select 1 as a from (select 1) as t where {{ not test_report.succeeded }}    
+      select * from (select 1) as t where {{ not test_report.succeeded }}    
       {{ dbt_unit_testing.clear_test_context() }}
     {% else %}
-      select 1 as a from (select 1) as t where false
+      select * from (select 1) as t where 1 = 0
     {% endif %}
   {% endif %}
 {% endmacro %}
@@ -85,8 +85,15 @@
   {% set expectations = test_configuration.expectations %}
   {% set model_node = dbt_unit_testing.model_node(test_configuration.model_node) %}
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
+
+  {% if expectations.no_rows %}
+    {% set expectations_sql = "select * from (" ~ model_complete_sql ~ ") as t where 1 = 0" %}
+  {% else %}
+    {% set expectations_sql = expectations.input_values %}
+  {% endif %}
+
   {% set column_transformations = test_configuration.options.column_transformations[test_configuration.model_name] | default({}) %}
-  {% set columns_list = dbt_unit_testing.extract_columns_list(expectations.input_values) %}
+  {% set columns_list = dbt_unit_testing.extract_columns_list(expectations_sql) %}
   {% set columns_list_str = dbt_unit_testing.quote_and_join_columns(columns_list) %}
   {% set transformed_columns_list_str = dbt_unit_testing.apply_transformations_to_columns(columns_list, column_transformations, use_alias=true) | join(", ") %}
   {% set transformed_columns_list_for_grouping_str = dbt_unit_testing.apply_transformations_to_columns(columns_list, column_transformations, use_alias=false) | join(", ")  %}
@@ -99,7 +106,7 @@
   {% endset %}
 
   {%- set expectations_query -%}
-    select count(1) as {{ count_column }}, {{ transformed_columns_list_str }} from ({{ expectations.input_values }}) as s group by {{ transformed_columns_list_for_grouping_str }}
+    select count(1) as {{ count_column }}, {{ transformed_columns_list_str }} from ({{ expectations_sql }}) as s group by {{ transformed_columns_list_for_grouping_str }}
   {% endset %}
 
   {%- set test_query -%}
