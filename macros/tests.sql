@@ -2,7 +2,7 @@
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
   {% if execute %}
-    {% if flags.WHICH == 'test' %}
+    {% if flags.WHICH in ('test', 'build') %}
       {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", "") }}
       {% set mocks_and_expectations_json_str = caller() %}
       {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
