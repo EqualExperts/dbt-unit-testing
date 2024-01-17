@@ -58,6 +58,7 @@
   {% set expectations = {
       "type": "expectations",
       "options": options,
+      "input_values": "select * from (select 1) as t where 1 = 0",
       "no_rows": true,
     }
   %} 
