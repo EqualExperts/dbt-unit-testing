@@ -1,0 +1,28 @@
+name: "Close Stale Issues and PRs"
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Runs every day at midnight
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Mark stale issues and pull requests
+        uses: actions/stale@v9
+        with:
+          debug-only: true
+          stale-issue-message: "This issue has been automatically marked as stale because it has not had activity in the last 30 days. It will be closed in 5 days if no further activity occurs. Thank you for your contributions."
+          stale-pr-message: "This pull request has been automatically marked as stale because it has not had activity in the last 45. It will be closed in 10 days if no further activity occurs. Thank you for your contributions."
+          days-before-issue-stale: 30
+          days-before-pr-stale: 45
+          days-before-issue-close: 5
+          days-before-pr-close: 10
+          stale-issue-label: "stale"
+          stale-pr-label: "stale"
+          close-issue-label: "wontfix"
+          close-pr-label: "wontfix"
+          any-of-labels: "question"
