@@ -41,7 +41,7 @@ Add the following to packages.yml
 ```yaml
 packages:
   - git: "https://github.com/EqualExperts/dbt-unit-testing"
-    revision: v0.3.2
+    revision: v0.4.12
 ```
 
 [read the docs](https://docs.getdbt.com/docs/package-management) for more information on installing packages.
