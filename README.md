@@ -15,13 +15,18 @@ You can test models independently by mocking their dependencies (models, sources
   - [Main Features](#main-features)
 - [Documentation](#documentation)
   - [Anatomy of a test](#anatomy-of-a-test)
+  - [Running Tests](#running-tests)
   - [Available Macros](#available-macros)
   - [Test Examples](#test-examples)
   - [Different ways to build mock values](#different-ways-to-build-mock-values)
   - [Mocking](#mocking)
     - [Database dependencies in detail](#database-dependencies-in-detail)
-    - [Requirement](#requirement)
+    - [Important Requirement](#important-requirement)
   - [Incremental Models](#incremental-models)
+  - [Column Transformations](#column-transformations)
+    - [How to use](#how-to-use)
+    - [Use Case 1: Rounding Column Values](#use-case-1-rounding-column-values)
+    - [Use Case 2: Converting Structs to JSON Strings in BigQuery](#use-case-2-converting-structs-to-json-strings-in-bigquery)
   - [Available Options](#available-options)
   - [Test Feedback](#test-feedback)
     - [Example](#example)
@@ -36,7 +41,7 @@ Add the following to packages.yml
 ```yaml
 packages:
   - git: "https://github.com/EqualExperts/dbt-unit-testing"
-    revision: v0.3.2
+    revision: v0.4.12
 ```
 
 [read the docs](https://docs.getdbt.com/docs/package-management) for more information on installing packages.
@@ -95,7 +100,7 @@ The test is composed of a test setup (mocks) and expectations:
   {% endcall %}
 
   {% call dbt_unit_testing.expect() %}
-    select  ...
+    select ...
   {% endcall %}
 
 {% endcall %}
@@ -109,14 +114,86 @@ The first line is boilerplate we can't avoid:
 
 We leverage the command dbt test to run the unit tests; then, we need a way to isolate the unit tests. The rest of the lines are the test itself, the mocks (test setup) and expectations.
 
+### Creating multiple tests in the same file
+
+When creating multiple tests in the same test file, you need to make sure they are all separated by an `UNION ALL` statement: 
+
+```Jinja
+{{ config(tags=['unit-test']) }}
+
+{% call dbt_unit_testing.test ('[Model to Test]','[Test Name]') %}
+  {% call dbt_unit_testing.mock_ref ('[model name]') %}
+     select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_source('[source name]') %}
+    select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect() %}
+    select  ...
+  {% endcall %}
+
+{% endcall %}
+
+UNION ALL
+
+{% call dbt_unit_testing.test ('[Model to Test]','[Another Test]') %}
+  {% call dbt_unit_testing.mock_ref ('[model name]') %}
+     select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.mock_source('[source name]') %}
+    select ...
+  {% endcall %}
+
+  {% call dbt_unit_testing.expect() %}
+    select  ...
+  {% endcall %}
+
+{% endcall %}
+```
+
+### Expectations
+
+The expectations are the results you expect from the model. The framework compares the expectations with the actuals and shows the differences in the test report.
+
+```jinja
+{% call dbt_unit_testing.expect() %}
+  select ...
+{% endcall %}
+```
+
+You can use the macro `expect_no_rows` to test if the model returns no rows:
+
+```jinja
+{% call dbt_unit_testing.expect_no_rows() %}
+{% endcall %}
+```
+
+## Running tests
+
+The framework leverages the dbt test command to run the tests. You can run all the tests in your project with the following command:
+
+```bash
+dbt test
+```
+
+If you want to run just the unit tests, you can use the following command:
+
+```bash
+dbt test --select tag:unit-test
+```
+
 ## Available Macros
 
-| macro name                   | description                                     |
-|------------------------------|-------------------------------------------------|
-| dbt_unit_testing.test        | Defines a Test                                  |
-| dbt_unit_testing.mock-ref    | Mocks a **model** / **snapshot** / **seed**     |
-| dbt_unit_testing.mock-source | Mocks a **source**                              |
-| dbt_unit_testing.expect      | Defines Test expectations                       |
+| macro name                      | description                                     |
+|---------------------------------|-------------------------------------------------|
+| dbt_unit_testing.test           | Defines a Test                                  |
+| dbt_unit_testing.mock_ref       | Mocks a **model** / **snapshot** / **seed**     |
+| dbt_unit_testing.mock_source    | Mocks a **source**                              |
+| dbt_unit_testing.expect         | Defines the Test expectations                   |
+| dbt_unit_testing.expect_no_rows | Used to test if the model returns no rows       |
 
 ## Test Examples
 
@@ -260,13 +337,13 @@ With the above configuration, you could write your tests like this:
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_orders', {"input_format": "csv"}) %}
-    order_id | customer_id | order_date 
+    order_id | customer_id | order_date::date
     1        | 1           | null
     2        | 1           | null
   {% endcall %}
   
   {% call dbt_unit_testing.mock_ref ('stg_payments', {"input_format": "csv"}) %}
-    order_id | amount
+    order_id | amount::int
     1        | 10
     2        | 10
   {% endcall %}
@@ -277,8 +354,11 @@ With the above configuration, you could write your tests like this:
   {% endcall %}
 {% endcall %}
 
-{% endcall %}
 ```
+
+Notice that you can specify the type of a column by adding the type name after the column name, separated by "::".
+
+The name of the type is the same as the name of the type in the database (e.g. `int`, `float`, `date`, `timestamp`, etc).
 
 ## Mocking
 
@@ -342,9 +422,9 @@ This SQL can be a pretty complex query; sometimes, it's non-performant or even a
 
 You can use the option **'use-database-models'** to avoid the recursive inspection and use the model defined in the database. Be aware that this makes a new dependency on the underlying model definition, and it needs to be updated each time you run a test.
 
-### Requirement
+### Important Requirement
 
-To be able to mock the models and sources in tests, in your dbt models you **must** use the macros  **dbt_unit_testing.ref** and **dbt_unit_testing.source**, for example:
+To be able to mock the models and sources in tests, in your dbt models you can use the macros  **dbt_unit_testing.ref** and **dbt_unit_testing.source**, for example:
 
 ```sql
 
@@ -352,7 +432,7 @@ To be able to mock the models and sources in tests, in your dbt models you **mus
 
 ```
 
-Alternatively, if you prefer to keep using the standard `ref` macro in the models, you can add these macros to your project:
+Alternatively, if you prefer to keep using the standard `ref` and `source` macros in the models, you can override them by adding these lines to your project:
 
 ```jinja
 {% macro ref() %}
@@ -497,6 +577,132 @@ To test the `is_incremental` section of your model, you must include the option 
 
 Note that in this case, we are also mocking the model being tested (`incremental_model`) to ensure the incremental logic functions correctly. It is necessary to mock the model itself when writing a test for the `is_incremental` part of the model.
 
+*Note: As previously mentioned, these type of tests are meant to test the `is_incremental` part of the model. Testing different increments strategies (such as `merge`, `delete+insert` or `insert_overwrite`) is not supported.*
+
+## Column Transformations
+
+This functionality allows for the application of transformations to columns before the execution of unit tests.
+
+Column transformations enable the alteration of column data, catering to the need for data standardization, conversion, or formatting prior to testing. This addition aims to support more sophisticated testing requirements and ensure data integrity within the testing process.
+
+### How to use
+
+To leverage the column transformations feature in `dbt-unit-testing`, you need to define a JSON structure specifying the desired transformations for each column. This structure is integrated into the unit test options. Below is an example of how to format this JSON structure:
+
+```Json
+{
+  "col_name_1": "round(col_name_1, 4)",
+  "col_name_2": "to_json_string(col_name_2)"
+}
+```
+
+You can assign this JSON into a variable and pass it into the unit test options. Below is an example of how to do this:
+
+```Jinja
+{% set column_transformations = {
+  "col_name_1": "round(col_name_1, 4)",
+  "col_name_2": "to_json_string(col_name_2)"
+} %}
+
+{% call dbt_unit_testing.test('some_model_name', options={"column_transformations": column_transformations}) %}
+
+...
+```
+
+In this example, `col_name_1` is rounded to four decimal places, and `col_name_2` is converted to a JSON string. These transformations are applied before the execution of the unit test.
+
+In addition to specifying column transformations at the individual test level, `dbt-unit-testing` also allows for a more generalized approach. You can define column transformations globally in the dbt_project.yml file. This approach allows for the application of column transformations to all unit tests in the project.
+
+Here is an example of how to set up column transformations in the dbt_project.yml file:
+
+```yaml
+vars:
+  unit_tests_config:
+    column_transformations:
+      some_model_name:
+        col_name_1: round(col_name_1, 4)
+        # ... additional transformations for 'some_model_name'
+      another_model_name:
+        # ... transformations for 'another_model_name'
+```
+
+In this configuration, transformations such as `round(col_name_1, 4)` are applied to `col_name_1` in the context of `some_model_name`.
+
+You can also use the special token `##column##` in your column transformations. This token will be replaced by the column name in the test query, properly quoted for the current database adapter:
+
+
+```yaml
+vars:
+  unit_tests_config:
+    column_transformations:
+      some_model_name:
+        col_name_1: "round(##column##, 2)"
+        # ... additional transformations
+```
+
+In this example, `round(##column##)` will be evaluated such that `##column##` is replaced with the properly quoted name of `col_name_1`. This ensures that the column name is correctly formatted for the database adapter in use.
+
+### Use Case 1: Rounding Column Values
+
+In many scenarios, especially when dealing with floating-point numbers, precision issues can arise, leading to inconsistencies in data testing. For example, calculations or aggregations may result in floating-point numbers with excessive decimal places, making direct comparisons challenging. To address this, `dbt-unit-testing` can round these values to a specified number of decimal places, ensuring consistency and precision in tests.
+
+Consider a model, `financial_model`, which contains a column `avg_revenue` representing the average of the revenue values from another table. Due to calculations, `avg_revenue` might have an extensive number of decimal places. For testing purposes, you might want to round these values to a fixed number of decimal places.
+
+```SQL
+SELECT
+    id,
+    AVG(revenue) as avg_revenue
+FROM
+    raw_financial_data
+```
+
+You can ensure that `avg_revenue` is rounded to five decimal places when testing `financial_model`, and your expectations are also rounded to five decimal places. This ensures that the test is precise and consistent.
+
+```Jinja
+{% set column_transformations = {
+  "avg_revenue": "round(##column##, 5)"
+} %}
+
+{% call dbt_unit_testing.test('financial_model', options={"column_transformations": column_transformations}) %}
+  {% call dbt_unit_testing.mock_ref ('raw_financial_data') %}
+    select 5.0 as revenue
+    UNION ALL
+    select 2.0 as revenue
+    UNION ALL
+    select 3.0 as revenue
+  {% endcall %}
+  {% call dbt_unit_testing.expect() %}
+    select 3.33333 as avg_revenue
+  {% endcall %}
+{% endcall %}
+```
+
+### Use Case 2: Converting Structs to JSON Strings in BigQuery
+
+In BigQuery, certain data types like structs and arrays pose a challenge for `dbt-unit-testing`, because it needs to use the EXCEPT clause. BigQuery does not support these operations directly on structs or arrays. A practical solution is to convert these complex data types into JSON strings, allowing for standard SQL operations to be applied in tests. This can be achieved using column transformations.
+
+Let's consider a model, `user_activity_model`, which includes a struct column `activity_details` in BigQuery. To facilitate testing involving grouping or comparison, we transform `activity_details` into a JSON string.
+
+```SQL
+SELECT
+    user_id,
+    activity_details -- struct column
+FROM
+    raw_user_activity
+```
+
+```Jinja
+{% set column_transformations = {
+  "activity_details": "to_json_string(##column##)"
+} %}
+
+{% call dbt_unit_testing.test('user_activity_model', options={"column_transformations": column_transformations}) %}
+  -- Test cases and assertions here
+{% endcall %}
+```
+
+In this example, the `activity_details` column, which is a struct, is transformed into a JSON string using `to_json_string(##column##)` before the execution of the unit test. This transformation facilitates operations like grouping and EXCEPT in BigQuery by converting the struct into a more manageable string format.
+
 ## Available Options
 
 | option                      | description                     | default              | scope*              |
@@ -512,6 +718,9 @@ Note that in this case, we are also mocking the model being tested (`incremental
 | **diff_column**        | The name of the `diff` column in the test report        | diff| project/test            |
 | **count_column**        | The name of the `count` column in the test report        | count| project/test            |
 | **run_as_incremental**      | Runs the model in `incremental` mode (it has no effect if the model is not incremental)     | false| project/test            |
+| **column_transformations**      | A JSON structure specifying the desired transformations for each column. See [Column Transformations](#column-transformations) for more details.     | {}| project/test            |
+| last_spaces_replace_char | Replace the spaces at the end of the values with another character. See [Test Feedback](#test-feedback) for more details. | (space) | project/test |
+
 Notes:
 
 - **scope** is the place where the option can be defined:
@@ -549,6 +758,28 @@ Rows mismatch:
 ```
 
 The first line was not on the model, but the second line was.
+
+### Spaces at the end of the diff values
+
+It can be hard to spot the difference when the values have spaces at the end. To avoid this, you can use the option `last_spaces_replace_char` to replace the spaces at the end of the values with another character:
+
+```yaml
+vars:
+  unit_tests_config:
+    last_spaces_replace_char: "."
+```
+
+This will replace the spaces at the end of the values with a dot. The result will be displayed like this:
+
+```yaml
+MODEL: customers
+TEST:  should sum order values to calculate customer_lifetime_value
+Rows mismatch:
+| diff | count | some_column |
+| ---- | ----- | ----------- |
+| +    |     1 | John        |
+| -    |     1 | John..      |
+```
 
 # Known Limitations
 

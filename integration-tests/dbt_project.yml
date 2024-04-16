@@ -22,6 +22,11 @@ clean-targets: # directories to be removed by `dbt clean`
 
 vars:
   unit_tests_config:
+    column_transformations:
+      model_for_column_transformations:
+        column_a: round(##column##, 5)
+      model_references_model_with_structs:
+        a: to_json_string(##column##)
     verbose: false
     use_qualified_sources: true
     use_database_models: false
@@ -33,3 +38,4 @@ vars:
     type_separator: "::"
     diff_column: "diff"
     count_column: "count"
+    last_spaces_replace_char: "."

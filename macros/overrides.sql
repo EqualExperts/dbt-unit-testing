@@ -1,11 +1,15 @@
 {% macro ref(project_or_package, model_name) %}
-  {% set project_or_package, model_name = dbt_unit_testing.setup_project_and_model_name(project_or_package, model_name) %}
   {% if dbt_unit_testing.running_unit_test() %}
+    {% set project_or_package, model_name = dbt_unit_testing.setup_project_and_model_name(project_or_package, model_name) %}
     {% set node_version = kwargs["version"] | default (kwargs["v"]) %}
     {% set node = {"package_name": project_or_package, "name": model_name, "version": node_version} %}
     {{ return (dbt_unit_testing.ref_cte_name(node)) }}
   {% else %}
-    {{ return (builtins.ref(project_or_package, model_name, **kwargs)) }}
+    {% if model_name is undefined %}
+      {{ return (builtins.ref(project_or_package, **kwargs)) }}
+    {% else %}
+      {{ return (builtins.ref(project_or_package, model_name, **kwargs)) }}
+    {% endif %}
   {% endif %}
 {% endmacro %}
 
@@ -20,9 +24,9 @@
 {% macro is_incremental() %}
   {% if dbt_unit_testing.running_unit_test() %}
       {% set options = dbt_unit_testing.get_test_context("options", {}) %}
-      {% set model_being_tested = dbt_unit_testing.get_test_context("model_being_tested", "") %}
+      {% set is_incremental_should_be_true_for_this_model = dbt_unit_testing.get_test_context("is_incremental_should_be_true_for_this_model", "") %}
       {% set model_being_rendered = dbt_unit_testing.get_test_context("model_being_rendered", "") %}
-      {{ return (options.get("run_as_incremental", False) and model_being_rendered == model_being_tested and model_being_rendered != "") }}
+      {{ return (options.get("run_as_incremental", False) and model_being_rendered == is_incremental_should_be_true_for_this_model and model_being_rendered != "") }}
   {% else %}
       {{ return (dbt.is_incremental())}}
   {% endif %}

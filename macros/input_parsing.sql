@@ -9,7 +9,7 @@
 {% endmacro %}
 
 {% macro sql_from_csv(options={}) %}
-  {{ return (sql_from_csv_input(caller(), options)) }}
+  {{ return (dbt_unit_testing.sql_from_csv_input(caller(), options)) }}
 {% endmacro %}
 
 {% macro sql_from_csv_input(csv_table, options) %}
@@ -50,5 +50,4 @@
 
   {{ return (sql) }}
 
- {% endmacro %}
-
+{% endmacro %}

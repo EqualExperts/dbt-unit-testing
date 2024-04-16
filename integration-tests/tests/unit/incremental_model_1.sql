@@ -47,7 +47,7 @@ UNION ALL
     UNION ALL
     select 30 as c1
   {% endcall %}
-  {% call dbt_unit_testing.mock_ref ('incremental_model_1') %}
+  {% call dbt_unit_testing.mock_ref ('incremental_model_1', options = {"include_missing_columns": true}) %}
     select 10 as c1
   {% endcall %}
   {% call dbt_unit_testing.expect() %}

@@ -2,25 +2,31 @@
   {{ dbt_unit_testing.ref_tested_model(model_name) }}
 
   {% if execute %}
-    {% set mocks_and_expectations_json_str = caller() %}
-    {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
-    {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
-    {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
-    {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
+    {% if flags.WHICH in ('test', 'build') %}
+      {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", "") }}
+      {% set mocks_and_expectations_json_str = caller() %}
+      {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
+      {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
+      {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
+      {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
 
-    {% if not test_report.succeeded %}
-      {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
+      {% if not test_report.succeeded %}
+        {{ dbt_unit_testing.show_test_report(test_configuration, test_report) }}
+      {% endif %}
+      
+      select * from (select 1) as t where {{ not test_report.succeeded }}    
+      {{ dbt_unit_testing.clear_test_context() }}
+    {% else %}
+      select * from (select 1) as t where 1 = 0
     {% endif %}
-    
-    select 1 as a from (select 1) as t where {{ not test_report.succeeded }}    
-    {{ dbt_unit_testing.clear_test_context() }}
   {% endif %}
 {% endmacro %}
 
 {% macro build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
-  {{ dbt_unit_testing.set_test_context("model_being_tested", dbt_unit_testing.ref_cte_name(model_node)) }}
+  {% set model_name = model_node.name %}
+  {% do options.update({"column_transformations": {model_name: options.get("column_transformations", {})}}) %}
   {% set test_configuration = {
-    "model_name": model_node.model_name, 
+    "model_name": model_node.name, 
     "description": test_description, 
     "model_node": model_node,
     "options": dbt_unit_testing.merge_configs([options])} 
@@ -30,6 +36,7 @@
   {{ dbt_unit_testing.verbose("CONFIG: " ~ test_configuration) }}
   
   {% do test_configuration.update (dbt_unit_testing.build_mocks_and_expectations(test_configuration, mocks_and_expectations_json_str)) %}
+  {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", dbt_unit_testing.ref_cte_name(model_node)) }}
   {% set test_queries = dbt_unit_testing.build_test_queries(test_configuration) %}
 
   {{ return ((test_configuration, test_queries)) }}
@@ -78,17 +85,28 @@
   {% set expectations = test_configuration.expectations %}
   {% set model_node = dbt_unit_testing.model_node(test_configuration.model_node) %}
   {%- set model_complete_sql = dbt_unit_testing.build_model_complete_sql(model_node, test_configuration.mocks, test_configuration.options) -%}
-  {% set columns = dbt_unit_testing.quote_and_join_columns(dbt_unit_testing.extract_columns_list(expectations.input_values)) %}
+
+  {% if expectations.no_rows %}
+    {% set expectations_sql = "select * from (" ~ model_complete_sql ~ ") as t where 1 = 0" %}
+  {% else %}
+    {% set expectations_sql = expectations.input_values %}
+  {% endif %}
+
+  {% set column_transformations = test_configuration.options.column_transformations[test_configuration.model_name] | default({}) %}
+  {% set columns_list = dbt_unit_testing.extract_columns_list(expectations_sql) %}
+  {% set columns_list_str = dbt_unit_testing.quote_and_join_columns(columns_list) %}
+  {% set transformed_columns_list_str = dbt_unit_testing.apply_transformations_to_columns(columns_list, column_transformations, use_alias=true) | join(", ") %}
+  {% set transformed_columns_list_for_grouping_str = dbt_unit_testing.apply_transformations_to_columns(columns_list, column_transformations, use_alias=false) | join(", ")  %}
 
   {% set diff_column = test_configuration.options.diff_column | default("diff") %}
   {% set count_column = test_configuration.options.count_column | default("count") %}
 
   {%- set actual_query -%}
-    select count(1) as {{ count_column }}, {{columns}} from ( {{ model_complete_sql }} ) as s group by {{ columns }}
+    select count(1) as {{ count_column }}, {{ transformed_columns_list_str }} from ( {{ model_complete_sql }} ) as s group by {{ transformed_columns_list_for_grouping_str }}
   {% endset %}
 
   {%- set expectations_query -%}
-    select count(1) as {{ count_column }}, {{columns}} from ({{ expectations.input_values }}) as s group by {{ columns }}
+    select count(1) as {{ count_column }}, {{ transformed_columns_list_str }} from ({{ expectations_sql }}) as s group by {{ transformed_columns_list_for_grouping_str }}
   {% endset %}
 
   {%- set test_query -%}
@@ -100,14 +118,14 @@
     ),
 
     extra_entries as (
-    select '+' as {{ diff_column }}, {{ count_column }}, {{columns}} from actual
+    select '+' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from actual
     {{ except() }}
-    select '+' as {{ diff_column }}, {{ count_column }}, {{columns}} from expectations),
+    select '+' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from expectations),
 
     missing_entries as (
-    select '-' as {{ diff_column }}, {{ count_column }}, {{columns}} from expectations
+    select '-' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from expectations
     {{ except() }}
-    select '-' as {{ diff_column }}, {{ count_column }}, {{columns}} from actual)
+    select '-' as {{ diff_column }}, {{ count_column }}, {{ columns_list_str }} from actual)
     
     select * from extra_entries
     UNION ALL
@@ -140,7 +158,7 @@
   {% endif %}
   {% if test_report.different_rows_count > 0 %}
     {{ dbt_unit_testing.println('{RED}ERROR: {YELLOW}Rows mismatch:') }}
-    {{ dbt_unit_testing.print_table(test_report.test_differences) }}
+    {{ dbt_unit_testing.print_table(test_report.test_differences, options=test_configuration.options) }}
   {% endif %}
 {% endmacro %}
 

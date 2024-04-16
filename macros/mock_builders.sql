@@ -53,6 +53,18 @@
   {{ return (dbt_unit_testing.append_json(expectations)) }}
 {% endmacro %}
 
+{% macro expect_no_rows(options={}) %}
+  {% set dummy = caller() %}
+  {% set expectations = {
+      "type": "expectations",
+      "options": options,
+      "input_values": "select * from (select 1) as t where 1 = 0",
+      "no_rows": true,
+    }
+  %} 
+  {{ return (dbt_unit_testing.append_json(expectations)) }}
+{% endmacro %}
+
 {% macro append_json(json) %}
   {{ return (json | tojson() ~ '####_JSON_LINE_DELIMITER_####') }}
 {% endmacro %}
@@ -83,7 +95,7 @@
     {% set input_values_sql %}
       {% set node_sql = dbt_unit_testing.build_node_sql(model_node, options.use_database_models) %}
         select * from ({{ input_values_sql }}) as m1
-        left join (select {{ missing_columns | join (",")}}
+        left join (select {{ dbt_unit_testing.quote_and_join_columns(missing_columns)}}
                   from ({{ node_sql }}) as m2) as m3 on false
     {%- endset -%}
   {%- endif -%}
