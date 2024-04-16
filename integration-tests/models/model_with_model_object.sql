@@ -1,0 +1,1 @@
+select '{{ dbt_unit_testing.model().resource_type }}' as resource_type

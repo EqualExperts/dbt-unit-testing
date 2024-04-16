@@ -7,6 +7,7 @@
       {% set mocks_and_expectations_json_str = caller() %}
       {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
       {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
+      {{ dbt_unit_testing.set_test_context("model_node_being_tested", model_node) }}
       {% set test_configuration, test_queries = dbt_unit_testing.build_configuration_and_test_queries(model_node, test_description, options, mocks_and_expectations_json_str) %}
       {% set test_report = dbt_unit_testing.build_test_report(test_configuration, test_queries) %}
 

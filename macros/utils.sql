@@ -279,3 +279,14 @@
   {{ return (dbt_unit_testing.split_and_pad_and_join(dbt_version, 5) >= dbt_unit_testing.split_and_pad_and_join(v, 5)) }}
 {% endmacro %}
 
+{%- macro model() -%}
+  {% if dbt_unit_testing.running_unit_test() %}
+    {% set model_node_being_tested = dbt_unit_testing.get_test_context("model_node_being_tested", "") %}
+    {% if model_node_being_tested == "" %}
+      {{ dbt_unit_testing.raise_error("Model node being tested not found.") }}
+    {% endif %}
+    {{ return(dbt_unit_testing.model_node(model_node_being_tested)) }}
+  {%- else -%}
+    {{ return(model) }}
+  {% endif %}
+{%- endmacro -%}
