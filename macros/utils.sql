@@ -25,7 +25,7 @@
 {% endmacro %}
 
 {% macro quote_and_join_columns(columns) %}
-  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_identifier) | join(", ") %}
+  {% set columns = dbt_unit_testing.map(columns, dbt_unit_testing.quote_column_identifier) | join(", ") %}
   {{ return (columns) }}
 {% endmacro %}
 
@@ -39,7 +39,7 @@
 {% endmacro %}
 
 {% macro apply_transformations_to_column(column, column_transformations, use_alias) %}
-  {% set quoted_column = dbt_unit_testing.quote_identifier(column) %}
+  {% set quoted_column = dbt_unit_testing.quote_column_identifier(column) %}
   {% set transformation = column_transformations.get(column, "") %}
   {% if transformation != "" %}
     {% set transformation = transformation | replace("##column##", quoted_column) %}
@@ -91,7 +91,7 @@
 {% endmacro %}
 
 {% macro has_value(v) %}
-  {{ return (v is defined and v is not none) }}
+  {{ return (v is defined and v is not none) }} 
 {% endmacro %}
 
 {% macro model_node (node) %}
@@ -179,39 +179,47 @@
   {{ return (dbt_unit_testing.deep_merge_jsons([unit_tests_config] + configs)) }}
 {% endmacro %}
 
+{% macro quote_column_identifier(identifier) %}
+    {{ return(adapter.dispatch('quote_column_identifier','dbt_unit_testing')(identifier)) }}
+{% endmacro %}
+
+{% macro default__quote_column_identifier(identifier) -%}
+    {{ return(dbt_unit_testing.quote_identifier_if_needed(identifier, '"')) }}
+{%- endmacro %}
+
+{% macro spark__quote_column_identifier(identifier) %}
+    {{ return(dbt_unit_testing.quote_identifier_if_needed(identifier, '`')) }}
+{% endmacro %}
+
+{% macro bigquery__quote_column_identifier(identifier) %}
+    {{ return(dbt_unit_testing.quote_identifier_if_needed(identifier, '`')) }}
+{% endmacro %}
+
+{% macro databricks__quote_identifier(identifier) %}
+    {{ return(dbt_unit_testing.quote_identifier_if_needed(identifier, '`')) }}
+{% endmacro %}
+  
+{% macro snowflake__quote_column_identifier(identifier) %}
+    {{ return(dbt_unit_testing.quote_identifier_if_needed(identifier, '"')) }}
+{% endmacro %}
+
 {% macro quote_identifier(identifier) %}
     {{ return(adapter.dispatch('quote_identifier','dbt_unit_testing')(identifier)) }}
 {% endmacro %}
 
 {% macro default__quote_identifier(identifier) -%}
-    {% if identifier.startswith('"') %}
-      {{ return(identifier) }}
-    {% else %}
-      {{ return('"' ~ identifier ~ '"') }}
-    {% endif %}
+    {{ return(dbt_unit_testing.quote_column_identifier(identifier)) }}
 {%- endmacro %}
 
-{% macro bigquery__quote_identifier(identifier) %}
-    {% if identifier.startswith('`') %}
-      {{ return(identifier) }}
-    {% else %}
-      {{ return('`' ~ identifier ~ '`') }}
-    {% endif %}
+{% macro snowflake__quote_identifier(identifier) %}
+    {{ return(dbt_unit_testing.quote_identifier_if_needed(identifier, '"') | upper) }}
 {% endmacro %}
 
-{% macro databricks__quote_identifier(identifier) %}
-    {% if identifier.startswith('`') %}
+{% macro quote_identifier_if_needed(identifier, quote) %}
+    {% if identifier.startswith(quote) %}
       {{ return(identifier) }}
     {% else %}
-      {{ return('`' ~ identifier ~ '`') }}
-    {% endif %}
-{% endmacro %}
-  
-{% macro snowflake__quote_identifier(identifier) %}
-    {% if identifier.startswith('"') %}
-      {{ return(identifier) }}
-    {% else %}
-      {{ return('"' ~ identifier | upper ~ '"') }}
+      {{ return(quote ~ identifier ~ quote) }}
     {% endif %}
 {% endmacro %}
 
