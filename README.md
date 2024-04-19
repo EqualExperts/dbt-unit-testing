@@ -194,6 +194,7 @@ dbt test --select tag:unit-test
 | dbt_unit_testing.mock_source    | Mocks a **source**                              |
 | dbt_unit_testing.expect         | Defines the Test expectations                   |
 | dbt_unit_testing.expect_no_rows | Used to test if the model returns no rows       |
+| dbt_unit_testing.model          | Allows the use of the model object              |
 
 ## Test Examples
 
@@ -702,6 +703,24 @@ FROM
 ```
 
 In this example, the `activity_details` column, which is a struct, is transformed into a JSON string using `to_json_string(##column##)` before the execution of the unit test. This transformation facilitates operations like grouping and EXCEPT in BigQuery by converting the struct into a more manageable string format.
+
+## The `model` object
+
+You can use the model object in your dbt models to access model properties, like this:
+
+```sql
+select model.name as model_name from {{ ref('some_model') }}
+```
+
+However this will prevent you from running tests on this model, because when running tests the model object refers to the test itself, not the model being tested.
+
+To overcome this limitation, you can use the `dbt_unit_testing.model` macro, like this:
+
+```sql
+select dbt_unit_testing.model().name as model_name from {{ ref('some_model') }}
+```
+
+The `dbt_unit_testing.model` macro will return the model object when running the model and when running the tests as well.
 
 ## Available Options
 
