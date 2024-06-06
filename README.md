@@ -530,7 +530,7 @@ When writing a test for this model, it will simulate the model running in `full-
 
 ```jinja
 {% call dbt_unit_testing.test('incremental_model', 'full refresh test') %}
-  {% call dbt_unit_testing.mock_ref ('model_for_incremental') %}
+  {% call dbt_unit_testing.mock_ref ('some_model') %}
     select 10 as c
     UNION ALL
     select 20 as c
