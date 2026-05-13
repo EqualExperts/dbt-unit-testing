@@ -1,4 +1,8 @@
 {% macro run_query(query) %}
+  {{ return(adapter.dispatch('run_query','dbt_unit_testing')(query)) }}
+{% endmacro %}
+
+{% macro default__run_query(query) %}
   {% set start_time = modules.datetime.datetime.now() %}
   {{ dbt_unit_testing.verbose('Running query => ' ~ dbt_unit_testing.sanitize(query)) }}
   {% set results = dbt.run_query(query) %}
@@ -6,6 +10,16 @@
   {{ dbt_unit_testing.verbose('Execution time => ' ~ end_time) }}
   {{ dbt_unit_testing.verbose('==============================================================') }}
   {{ return (results) }}
+{% endmacro %}
+
+{% macro materialize__run_query(query) %}
+  {% set cluster = target.get('cluster', none) %}
+  {% if cluster %}
+    {% call statement(auto_begin=True) %}
+      SET CLUSTER = {{ cluster }}
+    {% endcall %}
+  {% endif %}
+  {{ return(dbt_unit_testing.default__run_query(query)) }}
 {% endmacro %}
 
 {% macro sanitize(s) %}
