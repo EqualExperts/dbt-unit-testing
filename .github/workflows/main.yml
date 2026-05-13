@@ -22,7 +22,7 @@ jobs:
 
       - uses: "actions/setup-python@v5"
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
       - name: test snowflake
         run: ./run-all-integration-tests.sh snowflake
@@ -36,7 +36,7 @@ jobs:
 
       - uses: "actions/setup-python@v5"
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
       - id: "auth"
         name: "Authenticate to Google Cloud"
@@ -74,7 +74,7 @@ jobs:
 
       - uses: "actions/setup-python@v5"
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
       - name: test postgres
         run: ./run-all-integration-tests.sh postgres
@@ -103,7 +103,7 @@ jobs:
 
       - uses: "actions/setup-python@v5"
         with:
-          python-version: "3.11"
+          python-version: "3.10"
 
       - name: test postgres
         run: ./run-all-jaffle-shop-tests.sh postgres
