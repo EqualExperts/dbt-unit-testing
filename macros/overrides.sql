@@ -1,7 +1,7 @@
 {% macro ref(project_or_package, model_name) %}
   {% if dbt_unit_testing.running_unit_test() %}
     {% set project_or_package, model_name = dbt_unit_testing.setup_project_and_model_name(project_or_package, model_name) %}
-    {% set node_version = kwargs["version"] | default (kwargs["v"]) %}
+    {% set node_version = kwargs.get("version", kwargs.get("v", none)) %}
     {% set node = {"package_name": project_or_package, "name": model_name, "version": node_version} %}
     {{ return (dbt_unit_testing.ref_cte_name(node)) }}
   {% else %}
