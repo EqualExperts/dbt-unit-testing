@@ -10,7 +10,7 @@
   {% if model_name is undefined %}
     {{ dbt_unit_testing.raise_error('model_name must be provided for mock_ref') }}
   {% endif %}
-  {% set node_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
+  {% set node_version = kwargs.get("version", kwargs.get("v", none)) %}
   {% set mock = {
      "type": 'mock',
      "resource_type": 'model',

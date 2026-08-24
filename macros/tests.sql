@@ -4,7 +4,7 @@
   {% if execute %}
     {% if flags.WHICH in ('test', 'build') %}
       {{ dbt_unit_testing.set_test_context("is_incremental_should_be_true_for_this_model", "") }}
-      {% set model_version = kwargs["version"] | default(kwargs["v"]) | default(none) %}
+      {% set model_version = kwargs.get("version", kwargs.get("v", none)) %}
       {% set model_node = {"package_name": model.package_name, "name": model_name, "version": model_version} %}
       {{ dbt_unit_testing.set_test_context("model_node_being_tested", model_node) }}
       {% set mocks_and_expectations_json_str = caller() %}
