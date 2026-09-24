@@ -15,6 +15,12 @@
 {% macro extract_columns_list(query) %}
   {% set results = dbt_unit_testing.run_query(query) %}
   {% set columns = results.columns | map(attribute='name') | list %}
+  {# dbt Fusion flattens nested columns into e.g. `col.0/field`; collapse them back to the top-level column #}
+  {% set top_level_columns = [] %}
+  {% for column in columns %}
+    {% do top_level_columns.append(column.split('.')[0].split('/')[0]) %}
+  {% endfor %}
+  {% set columns = top_level_columns | unique | list %}
   {{ return (columns) }}
 {% endmacro %}
 
